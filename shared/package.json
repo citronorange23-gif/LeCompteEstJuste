@@ -1,0 +1,13 @@
+{
+  "name": "@lcb/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./algorithm.ts",
+  "types": "./algorithm.ts",
+  "exports": {
+    "./algorithm": {
+      "types": "./algorithm.ts",
+      "default": "./algorithm.ts"
+    }
+  }
+}

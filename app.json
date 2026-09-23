@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "a087fe54-eada-4981-a694-588ec23eb27c"
+      }
+    },
+    "android": {
+      "package": "com.sagetdev.lecompteestbon"
+    }
+  }
+}

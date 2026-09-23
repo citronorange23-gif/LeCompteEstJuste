@@ -1,0 +1,5 @@
+{
+  "name": "le-compte-est-bon",
+  "private": true,
+  "workspaces": ["Backend", "Frontend", "shared"]
+}

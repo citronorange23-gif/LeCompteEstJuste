@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Player {
+  id        String   @id
+  pseudo    String   @unique
+  wins      Int      @default(0)
+  losses    Int      @default(0)
+  draws     Int      @default(0)
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  sentInvites GameInvite[]
+}
+
+model GameInvite {
+  id String @id @default(cuid())
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  matchId String
+
+  status InviteStatus @default(PENDING)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+  @@index([matchId])
+  @@index([expiresAt])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
