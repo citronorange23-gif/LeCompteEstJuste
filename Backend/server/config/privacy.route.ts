@@ -1,6 +1,6 @@
 
 import express from "express";
-import { htmlText } from "./config";
+import { privacyText, contactText } from "./config";
 
 const router = express.Router();
 
@@ -8,7 +8,11 @@ router.get("/", (req, res) => {
     res
         .status(200)
         .type("html")
-        .send(htmlText);
+        .send(privacyText);
+});
+
+router.get("/contact", (req, res) => {
+    res.status(200).type("html").send(contactText);
 });
 
 export default router;

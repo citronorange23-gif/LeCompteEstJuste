@@ -1,4 +1,4 @@
-export const htmlText = `
+export const privacyText = `
             <!DOCTYPE html>
             <html lang="fr">
             <head>
@@ -305,3 +305,139 @@ export const htmlText = `
             </body>
             </html>
         `;
+
+export const contactText = `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+            <title>Contact - Le Compte est Bon</title>
+
+            <style>
+                * {
+                    box-sizing: border-box;
+                }
+
+                body {
+                    font-family: Arial, Helvetica, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 40px 20px;
+                    line-height: 1.7;
+                    color: #334155;
+                    background: #f8fafc;
+                }
+
+                main {
+                    background: #ffffff;
+                    padding: 36px;
+                    border-radius: 16px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                h1 {
+                    color: #0f172a;
+                    font-size: 2rem;
+                    margin-top: 0;
+                }
+
+                p {
+                    font-size: 1rem;
+                }
+
+                .contact-card {
+                    margin-top: 24px;
+                    padding: 20px;
+                    background: #f1f5f9;
+                    border-radius: 12px;
+                }
+
+                a {
+                    color: #4f46e5;
+                    text-decoration: none;
+                    overflow-wrap: anywhere;
+                }
+
+                a:hover {
+                    text-decoration: underline;
+                }
+
+                footer {
+                    margin-top: 32px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e2e8f0;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                }
+
+                @media (max-width: 600px) {
+                    body {
+                        padding: 16px 12px;
+                    }
+
+                    main {
+                        padding: 24px 18px;
+                    }
+
+                    h1 {
+                        font-size: 1.7rem;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+            <main>
+                <h1>Contactez-nous</h1>
+
+                <p>
+                    Une question, un problème technique ou une suggestion
+                    concernant <strong>Le Compte est Bon</strong> ?
+                    N'hésitez pas à nous contacter.
+                </p>
+
+                <div class="contact-card">
+                    <h2>Par courriel</h2>
+
+                    <p>
+                        Pour toute demande d'assistance, question relative
+                        à la confidentialité ou demande de suppression
+                        de vos données, contactez-nous à l'adresse suivante :
+                    </p>
+
+                    <p>
+                        <strong>Email :</strong>
+                        <a href="mailto:TON_EMAIL">
+                            TON_EMAIL
+                        </a>
+                    </p>
+                </div>
+
+                <div class="contact-card">
+                    <h2>GitHub</h2>
+
+                    <p>
+                        Vous pouvez également consulter notre dépôt GitHub
+                        pour signaler un problème ou suggérer une amélioration.
+                    </p>
+
+                    <p>
+                        <a
+                            href="https://github.com/TON_PSEUDO"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Visiter notre GitHub
+                        </a>
+                    </p>
+                </div>
+
+                <footer>
+                    © 2026 Le Compte est Bon. Tous droits réservés.
+                </footer>
+            </main>
+        </body>
+        </html>
+    `;
