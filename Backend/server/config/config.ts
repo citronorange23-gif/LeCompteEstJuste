@@ -1,3 +1,6 @@
+const git = "https://github.com/citronorange23-gif/LeCompteEstJuste";
+const email = "sagetdevfares@gmail.com";
+
 export const privacyText = `
             <!DOCTYPE html>
             <html lang="fr">
@@ -293,8 +296,8 @@ export const privacyText = `
                         <strong>Application :</strong> Le Compte est Bon<br>
                         <strong>Développeur :</strong> SagetDev<br>
                         <strong>Courriel :</strong>
-                        <a href="mailto:sagetdevfares@gmail.com">
-                            sagetdevfares@gmail.com
+                        <a href="mailto:${email}">
+                            ${email}
                         </a><br>
                     </p>
 
@@ -409,8 +412,8 @@ export const contactText = `
 
                     <p>
                         <strong>Email :</strong>
-                        <a href="mailto:TON_EMAIL">
-                            TON_EMAIL
+                        <a href="mailto:${email}">
+                            ${email}
                         </a>
                     </p>
                 </div>
@@ -425,7 +428,7 @@ export const contactText = `
 
                     <p>
                         <a
-                            href="https://github.com/TON_PSEUDO"
+                            href="${git}"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
