@@ -218,9 +218,9 @@ if (resultat === match.target) {
                     </Text>
                 </Pressable>
 
-                <Pressable onPress={handleInviteFriend} style={[mpStyles.primaryButton, { backgroundColor: "#10B981" }]}>
+                {/* <Pressable onPress={handleInviteFriend} style={[mpStyles.primaryButton, { backgroundColor: "#10B981" }]}>
                     <Text style={mpStyles.primaryButtonText}>🔗 Inviter un ami</Text>
-                </Pressable>
+                </Pressable> */}
 
                 <Pressable
                     onPress={() => {

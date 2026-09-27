@@ -44,8 +44,10 @@ export default function OnboardingModal({ visible, onClose }: Props) {
             onRequestClose={onClose}
             statusBarTranslucent
         >
-            <View style={styles.modalOverlay}>
-                <View style={[styles.modalCard, obStyles.card]}>
+            {/* 1. On transforme l'overlay en Pressable pour détecter les clics en dehors */}
+            <Pressable style={styles.modalOverlay} onPress={onClose}>
+                {/* 2. On ajoute un Pressable vide ici pour empêcher la fermeture si on clique sur la carte */}
+                <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, obStyles.card]}>
                     <Text style={styles.modalTitle}>
                         Comment jouer 🎲
                     </Text>
@@ -80,8 +82,8 @@ export default function OnboardingModal({ visible, onClose }: Props) {
                             C'est compris !
                         </Text>
                     </Pressable>
-                </View>
-            </View>
+                </Pressable>
+            </Pressable>
         </Modal>
     );
 }

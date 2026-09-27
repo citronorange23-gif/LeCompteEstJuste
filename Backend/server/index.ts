@@ -4,6 +4,8 @@ import { Server } from "socket.io";
 import { setupSocketServer } from "./socket";
 import { ClientToServerEvents, ServerToClientEvents } from "./types";
 
+import privacyRoutes from "./config/privacy.route";
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -25,6 +27,8 @@ process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
 
 setupSocketServer(io);
+
+app.use("/privacy", privacyRoutes);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 httpServer.listen(PORT, () => {

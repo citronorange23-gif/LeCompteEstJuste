@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { styles } from "../../styles/homeStyles";
 import OnboardingModal from "../../components/OnboardingModal";
 import { hasSeenOnboarding, markOnboardingSeen } from "../../lib/onboarding";
@@ -81,10 +81,20 @@ export default function Home() {
                     </Text>
                 </Pressable>
 
+                {/* 2. Modification du bouton de classement pour inclure l'icône */}
                 <Pressable
                     onPress={() => router.push("/leaderboard")}
-                    style={styles.leaderboardLink}
+                    style={[
+                        styles.leaderboardLink,
+                        {
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 8,
+                        },
+                    ]}
                 >
+                    <MaterialIcons name="leaderboard" size={20} color="#FFD700" />
                     <Text style={styles.leaderboardLinkText}>Voir le classement mondial</Text>
                 </Pressable>
             </View>

@@ -13,7 +13,7 @@ export const handleInviteFriend = () => {
             const shareUrl = Linking.createURL("invite", {
                 scheme: "lecompteestbon", // Remplace par ton scheme exact de app.json
                 queryParams: { code: inviteId },
-            });
+            }); 
 
             await Share.share({
                 message: `Viens m'affronter sur Le Compte est Bon en 1v1 ! Rejoins ma partie ici : ${shareUrl}`,
