@@ -4,7 +4,7 @@ import { privacyText, contactText } from "./config";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get("/privacy", (req, res) => {
     res
         .status(200)
         .type("html")

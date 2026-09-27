@@ -28,7 +28,7 @@ process.on("SIGINT", gracefulShutdown);
 
 setupSocketServer(io);
 
-app.use("/privacy", privacyRoutes);
+app.use("/", privacyRoutes);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 httpServer.listen(PORT, () => {
