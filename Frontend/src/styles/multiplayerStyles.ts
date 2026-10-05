@@ -1,6 +1,10 @@
 import { StyleSheet, Platform } from "react-native";
 
 export const mpStyles = StyleSheet.create({
+    // ─────────────────────────────
+    // ÉCRANS CENTRÉS
+    // ─────────────────────────────
+
     centered: {
         flex: 1,
         justifyContent: "center",
@@ -15,6 +19,10 @@ export const mpStyles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 6,
     },
+
+    // ─────────────────────────────
+    // PSEUDO
+    // ─────────────────────────────
 
     pseudoInput: {
         width: "100%",
@@ -39,11 +47,17 @@ export const mpStyles = StyleSheet.create({
         marginTop: -4,
     },
 
+    // ─────────────────────────────
+    // BOUTONS
+    // ─────────────────────────────
+
     primaryButton: {
         width: "100%",
         height: 50,
         borderRadius: 12,
-        backgroundColor: "#6366F1",
+        backgroundColor: "#4F46E5",
+        borderWidth: 1,
+        borderColor: "#6366F1",
         alignItems: "center",
         justifyContent: "center",
         marginTop: 4,
@@ -72,12 +86,20 @@ export const mpStyles = StyleSheet.create({
         fontWeight: "700",
     },
 
+    // ─────────────────────────────
+    // FILE D'ATTENTE
+    // ─────────────────────────────
+
     queueTitle: {
         color: "#F8FAFC",
         fontSize: 18,
         fontWeight: "800",
         marginTop: 12,
     },
+
+    // ─────────────────────────────
+    // MATCH
+    // ─────────────────────────────
 
     matchHeader: {
         flexDirection: "row",
@@ -106,6 +128,10 @@ export const mpStyles = StyleSheet.create({
         backgroundColor: "#22C55E",
     },
 
+    // ─────────────────────────────
+    // TIMER
+    // ─────────────────────────────
+
     timerBarTrack: {
         height: 8,
         borderRadius: 4,
@@ -132,6 +158,10 @@ export const mpStyles = StyleSheet.create({
         marginBottom: 10,
     },
 
+    // ─────────────────────────────
+    // ATTENTE ADVERSAIRE
+    // ─────────────────────────────
+
     waitingBanner: {
         borderRadius: 12,
         paddingVertical: 10,
@@ -149,6 +179,10 @@ export const mpStyles = StyleSheet.create({
         fontWeight: "700",
     },
 
+    // ─────────────────────────────
+    // RÉSULTAT
+    // ─────────────────────────────
+
     resultTitle: {
         color: "#F8FAFC",
         fontSize: 22,
@@ -156,6 +190,39 @@ export const mpStyles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 4,
     },
+
+    resultBanner: {
+        width: "100%",
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        borderWidth: 2,
+        backgroundColor: "#0F172A",
+        alignItems: "center",
+        marginBottom: 16,
+    },
+
+    resultEmoji: {
+        fontSize: 48,
+        marginBottom: 4,
+    },
+
+    resultBannerTitle: {
+        fontSize: 26,
+        fontWeight: "800",
+        marginBottom: 4,
+    },
+
+    resultSubtitle: {
+        fontSize: 14,
+        color: "#94A3B8",
+        textAlign: "center",
+        paddingHorizontal: 8,
+    },
+
+    // ─────────────────────────────
+    // CARTE RÉSULTAT JOUEUR
+    // ─────────────────────────────
 
     playerResultCard: {
         width: "100%",
@@ -170,14 +237,21 @@ export const mpStyles = StyleSheet.create({
     winnerCard: {
         backgroundColor: "#14532D",
         borderColor: "#22C55E",
+
         ...Platform.select({
             ios: {
                 shadowColor: "#22C55E",
                 shadowOpacity: 0.3,
                 shadowRadius: 10,
-                shadowOffset: { width: 0, height: 3 },
+                shadowOffset: {
+                    width: 0,
+                    height: 3,
+                },
             },
-            android: { elevation: 4 },
+
+            android: {
+                elevation: 4,
+            },
         }),
     },
 
@@ -193,27 +267,10 @@ export const mpStyles = StyleSheet.create({
         fontSize: 13,
     },
 
-    // Bannière de résultat
-    resultBanner: {
-        width: "100%",
-        paddingVertical: 24,
-        paddingHorizontal: 20,
-        borderRadius: 20,
-        borderWidth: 2,
-        backgroundColor: "#0F172A",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    resultEmoji: { fontSize: 48, marginBottom: 4 },
-    resultBannerTitle: { fontSize: 26, fontWeight: "800", marginBottom: 4 },
-    resultSubtitle: {
-        fontSize: 14,
-        color: "#94A3B8",
-        textAlign: "center",
-        paddingHorizontal: 8,
-    },
+    // ─────────────────────────────
+    // CIBLE
+    // ─────────────────────────────
 
-    // Pastille cible
     targetPill: {
         flexDirection: "row",
         alignItems: "center",
@@ -224,32 +281,69 @@ export const mpStyles = StyleSheet.create({
         marginBottom: 20,
         gap: 10,
     },
-    targetPillLabel: { color: "#94A3B8", fontSize: 12, fontWeight: "700", letterSpacing: 1 },
-    targetPillValue: { color: "#F8FAFC", fontSize: 20, fontWeight: "800" },
 
-    // Cartes joueurs
+    targetPillLabel: {
+        color: "#94A3B8",
+        fontSize: 12,
+        fontWeight: "700",
+        letterSpacing: 1,
+    },
+
+    targetPillValue: {
+        color: "#F8FAFC",
+        fontSize: 20,
+        fontWeight: "800",
+    },
+
+    // ─────────────────────────────
+    // CARTES JOUEURS
+    // ─────────────────────────────
+
     playersRow: {
         flexDirection: "row",
         width: "100%",
         gap: 12,
         marginBottom: 12,
     },
+
     playerCard: {
         flex: 1,
         paddingVertical: 18,
         paddingHorizontal: 12,
         borderRadius: 16,
-        backgroundColor: "#1E293B",
+        backgroundColor: "#111C33",
         borderWidth: 2,
-        borderColor: "transparent",
+        borderColor: "#1E293B",
         alignItems: "center",
     },
-    playerCardSelf: { backgroundColor: "#1E1B4B" },
+
+    playerCardSelf: {
+        backgroundColor: "#1E1B4B",
+        borderColor: "#6366F1",
+    },
+
     playerCardWinner: {
         borderColor: "#FBBF24",
         backgroundColor: "#292524",
+
+        ...Platform.select({
+            ios: {
+                shadowColor: "#FBBF24",
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+            },
+
+            android: {
+                elevation: 3,
+            },
+        }),
     },
-    crownIcon: { fontSize: 22, marginBottom: 2 },
+
+    crownIcon: {
+        fontSize: 22,
+        marginBottom: 2,
+    },
+
     playerCardRole: {
         fontSize: 11,
         color: "#94A3B8",
@@ -258,25 +352,34 @@ export const mpStyles = StyleSheet.create({
         textTransform: "uppercase",
         marginBottom: 4,
     },
+
     playerCardName: {
         fontSize: 15,
         fontWeight: "700",
         color: "#F8FAFC",
         marginBottom: 8,
     },
+
     playerCardTime: {
         fontSize: 26,
         fontWeight: "800",
-        color: "#10B981",
+        color: "#4ADE80",
     },
-    playerCardTimeFail: { color: "#64748B" },
+
+    playerCardTimeFail: {
+        color: "#F87171",
+    },
+
     playerCardStatus: {
         fontSize: 12,
         color: "#94A3B8",
         marginTop: 4,
     },
 
-    // Écart
+    // ─────────────────────────────
+    // ÉCART
+    // ─────────────────────────────
+
     timeDiffText: {
         color: "#94A3B8",
         fontSize: 13,
@@ -284,45 +387,49 @@ export const mpStyles = StyleSheet.create({
         fontStyle: "italic",
     },
 
+    // ─────────────────────────────
+    // DÉCONNEXION
+    // ─────────────────────────────
+
     disconnectBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: "#FEF3C7",
-    borderWidth: 1,
-    borderColor: "#F59E0B",
-},
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 10,
+        marginBottom: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 14,
+        backgroundColor: "#451A03",
+        borderWidth: 1,
+        borderColor: "#F59E0B",
+    },
 
-disconnectEmoji: {
-    fontSize: 26,
-    marginRight: 10,
-},
+    disconnectEmoji: {
+        fontSize: 26,
+        marginRight: 10,
+    },
 
-disconnectContent: {
-    flex: 1,
-},
+    disconnectContent: {
+        flex: 1,
+    },
 
-disconnectTitle: {
-    color: "#92400E",
-    fontSize: 15,
-    fontWeight: "800",
-},
+    disconnectTitle: {
+        color: "#FCD34D",
+        fontSize: 15,
+        fontWeight: "800",
+    },
 
-disconnectText: {
-    marginTop: 2,
-    color: "#A16207",
-    fontSize: 12,
-    fontWeight: "600",
-},
+    disconnectText: {
+        marginTop: 2,
+        color: "#FBBF24",
+        fontSize: 12,
+        fontWeight: "600",
+    },
 
-disconnectTimer: {
-    marginTop: 3,
-    color: "#B45309",
-    fontSize: 13,
-    fontWeight: "800",
-},
+    disconnectTimer: {
+        marginTop: 3,
+        color: "#F59E0B",
+        fontSize: 13,
+        fontWeight: "800",
+    },
 });

@@ -249,92 +249,122 @@ export const styles = StyleSheet.create({
     },
 
     undoButton: {
-        marginTop: 14,
-        height: 46,
-        borderRadius: 12,
-        backgroundColor: "#0b7dff",
-        borderWidth: 1,
-        //borderColor: "#EF4444",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "row",
-        gap: 6,
-    },
+    marginTop: 14,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: "#78350F",
+    borderWidth: 1,
+    borderColor: "#F59E0B",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    ...Platform.select({
+        ios: {
+            shadowColor: "#F59E0B",
+            shadowOpacity: 0.22,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 3 },
+        },
+        android: {
+            elevation: 3,
+        },
+    }),
+},
 
-    undoText: {
-        color: "#FFFFFF",
-        fontSize: 14,
-        fontWeight: "700",
-    },
+undoText: {
+    color: "#FDE68A",
+    fontSize: 14,
+    fontWeight: "700",
+},
 
-    solutionButton: {
-        marginTop: 10,
-        height: 46,
-        borderRadius: 12,
-        backgroundColor: "#2563EB",
-        borderWidth: 1,
-        borderColor: "#3B82F6",
-        alignItems: "center",
-        justifyContent: "center",
-    },
+solutionButton: {
+    marginTop: 10,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: "#312E81",
+    borderWidth: 1,
+    borderColor: "#6366F1",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+        ios: {
+            shadowColor: "#6366F1",
+            shadowOpacity: 0.25,
+            shadowRadius: 7,
+            shadowOffset: { width: 0, height: 3 },
+        },
+        android: {
+            elevation: 3,
+        },
+    }),
+},
 
-    solutionButtonText: {
-        color: "#FFFFFF",
-        fontSize: 14,
-        fontWeight: "700",
-    },
+solutionButtonText: {
+    color: "#E0E7FF",
+    fontSize: 14,
+    fontWeight: "700",
+},
 
-    newGameButton: {
-        marginTop: 12,
-        marginBottom: 14,
-        height: 52,
-        borderRadius: 14,
-        backgroundColor: "#16A34A",
-        alignItems: "center",
-        justifyContent: "center",
-        ...Platform.select({
-            ios: {
-                shadowColor: "#16A34A",
-                shadowOpacity: 0.35,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 },
-            },
-            android: { elevation: 4 },
-        }),
-    },
+newGameButton: {
+    marginTop: 12,
+    marginBottom: 14,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: "#15803D",
+    borderWidth: 1,
+    borderColor: "#22C55E",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+        ios: {
+            shadowColor: "#22C55E",
+            shadowOpacity: 0.3,
+            shadowRadius: 9,
+            shadowOffset: { width: 0, height: 4 },
+        },
+        android: {
+            elevation: 4,
+        },
+    }),
+},
 
-    newGameText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "800",
-        letterSpacing: 0.3,
-    },
+newGameText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+},
 
-    abandonButton: {
-        marginTop: 12,
-        marginBottom: 14,
-        height: 52,
-        borderRadius: 14,
-        backgroundColor: "#ff0202",
-        alignItems: "center",
-        justifyContent: "center",
-        ...Platform.select({
-            ios: {
-                shadowColor: "#ff280c",
-                shadowOpacity: 0.35,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 },
-            },
-            android: { elevation: 4 },
-        }),
-    },
+abandonButton: {
+    marginTop: 12,
+    marginBottom: 14,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: "#7F1D1D",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+        ios: {
+            shadowColor: "#EF4444",
+            shadowOpacity: 0.25,
+            shadowRadius: 9,
+            shadowOffset: { width: 0, height: 4 },
+        },
+        android: {
+            elevation: 4,
+        },
+    }),
+},
 
-    abandonText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "800",
-        letterSpacing: 0.3,
-    },
+abandonText: {
+    color: "#FEE2E2",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+},
 
     modalOverlay: {
         flex: 1,

@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Le Compte est Bon",
+    "name": "Le Compte est Juste",
     "slug": "le-compte-est-bon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lecompteestbon",
+    "scheme": "lecompteestjuste",
     "userInterfaceStyle": "automatic",
     "android": {
-      "package": "com.SagetDev.lecompteestbon",
+      "package": "com.sagetdev.lecompteestjuste",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png"

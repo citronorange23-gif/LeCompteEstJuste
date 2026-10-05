@@ -96,6 +96,7 @@ export default function Leaderboard() {
         if (index === 0) return "🥇";
         if (index === 1) return "🥈";
         if (index === 2) return "🥉";
+
         return `#${index + 1}`;
     };
 
@@ -108,85 +109,106 @@ export default function Leaderboard() {
     };
 
     const renderPlayer = ({
-    item,
-    index,
-}: {
-    item: LeaderboardPlayer;
-    index: number;
-}) => {
-    const isTopThree = index < 3;
-    const total = item.wins + item.losses;
-    const isMe = myPseudo !== null && item.pseudo === myPseudo;
+        item,
+        index,
+    }: {
+        item: LeaderboardPlayer;
+        index: number;
+    }) => {
+        const isTopThree = index < 3;
+        const total = item.wins + item.losses + item.draws;
+        const isMe = myPseudo !== null && item.pseudo === myPseudo;
 
-    return (
-        <View
-            style={[
-                lbStyles.leaderboardRow,
-                isTopThree && lbStyles.leaderboardTopRow,
-                isMe && lbStyles.leaderboardMeRow,
-            ]}
-        >
-            <View style={lbStyles.leaderboardRank}>
-                <Text
-                    style={[
-                        lbStyles.leaderboardRankText,
-                        isTopThree && lbStyles.leaderboardMedalText,
-                    ]}
-                >
-                    {getMedal(index)}
-                </Text>
-            </View>
+        const pointsStyle =
+            item.points > 0
+                ? lbStyles.leaderboardPointsPositive
+                : item.points < 0
+                    ? lbStyles.leaderboardPointsNegative
+                    : lbStyles.leaderboardPointsZero;
 
-            <View style={lbStyles.leaderboardPlayer}>
-                <View style={lbStyles.leaderboardPseudoRow}>
+        return (
+            <View
+                style={[
+                    lbStyles.leaderboardRow,
+                    isTopThree && lbStyles.leaderboardTopRow,
+                    isMe && lbStyles.leaderboardMeRow,
+                ]}
+            >
+                <View style={lbStyles.leaderboardRank}>
                     <Text
-                        style={lbStyles.leaderboardPseudo}
-                        numberOfLines={1}
+                        style={[
+                            lbStyles.leaderboardRankText,
+                            isTopThree && lbStyles.leaderboardMedalText,
+                        ]}
                     >
-                        {item.pseudo}
+                        {getMedal(index)}
                     </Text>
-
-                    {isMe && (
-                        <View style={lbStyles.meBadge}>
-                            <Text style={lbStyles.meBadgeText}>VOUS</Text>
-                        </View>
-                    )}
                 </View>
 
-                <Text style={lbStyles.leaderboardStats}>
-                    {total === 0
-                        ? "Aucune partie jouée"
-                        : `${item.wins} victoire${
-                              item.wins !== 1 ? "s" : ""
-                          } • ${item.losses} défaite${
-                              item.losses !== 1 ? "s" : ""
-                          } • ${item.draws} nul${
-                              item.draws !== 1 ? "s" : ""
-                          } • ${getWinRate(item)}`}
-                </Text>
-            </View>
+                <View style={lbStyles.leaderboardPlayer}>
+                    <View style={lbStyles.leaderboardPseudoRow}>
+                        <Text
+                            style={lbStyles.leaderboardPseudo}
+                            numberOfLines={1}
+                        >
+                            {item.pseudo}
+                        </Text>
 
-            <View style={lbStyles.leaderboardRate}>
-                <Text style={lbStyles.leaderboardRateValue}>
-                    {item.points > 0 ? `+${item.points}` : item.points}
-                </Text>
+                        {isMe && (
+                            <View style={lbStyles.meBadge}>
+                                <Text style={lbStyles.meBadgeText}>
+                                    VOUS
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
-                <Text style={lbStyles.leaderboardRateLabel}>
-                    POINTS
-                </Text>
+                    <Text style={lbStyles.leaderboardStats}>
+                        {total === 0
+                            ? "Aucune partie jouée"
+                            : `${item.wins} victoire${
+                                  item.wins !== 1 ? "s" : ""
+                              } • ${item.losses} défaite${
+                                  item.losses !== 1 ? "s" : ""
+                              } • ${item.draws} nul${
+                                  item.draws !== 1 ? "s" : ""
+                              } • ${getWinRate(item)}`}
+                    </Text>
+                </View>
+
+                <View style={lbStyles.leaderboardRate}>
+                    <Text
+                        style={[
+                            lbStyles.leaderboardRateValue,
+                            pointsStyle,
+                        ]}
+                    >
+                        {item.points > 0
+                            ? `+${item.points}`
+                            : item.points}
+                    </Text>
+
+                    <Text style={lbStyles.leaderboardRateLabel}>
+                        POINTS
+                    </Text>
+                </View>
             </View>
-        </View>
-    );
-};
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={lbStyles.leaderboardContainer}>
                 <View style={lbStyles.leaderboardHeader}>
                     <View style={lbStyles.leaderboardTitleContainer}>
-                        <Text style={lbStyles.leaderboardTitle}>🏆 Classement</Text>
+                        <Text style={lbStyles.leaderboardTitle}>
+                            🏆 Classement
+                        </Text>
+
                         <Text style={lbStyles.leaderboardSubtitle}>
-                            {players.length > 0 ? `Top ${players.length}` : "Top 50"}
+                            {players.length > 0
+                                ? `Top ${players.length}`
+                                : "Top 50"}
                         </Text>
                     </View>
 
@@ -195,13 +217,20 @@ export default function Leaderboard() {
                         style={lbStyles.backButton}
                         hitSlop={8}
                     >
-                        <Ionicons name="arrow-back" size={18} color="#FFFFFF" />
+                        <Ionicons
+                            name="arrow-back"
+                            size={18}
+                            color="#FFFFFF"
+                        />
                     </Pressable>
                 </View>
 
                 {loading ? (
                     <View style={lbStyles.leaderboardLoading}>
-                        <ActivityIndicator size="large" color="#111827" />
+                        <ActivityIndicator
+                            size="large"
+                            color="#111827"
+                        />
 
                         <Text style={lbStyles.leaderboardLoadingText}>
                             Chargement du classement...

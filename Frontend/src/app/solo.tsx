@@ -15,7 +15,7 @@ import {
     computeResult,
     computeScore,
     type Game,
-} from "@lcb/shared/algorithm";
+} from "../lib/algorithm";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationBar } from "expo-navigation-bar";
 

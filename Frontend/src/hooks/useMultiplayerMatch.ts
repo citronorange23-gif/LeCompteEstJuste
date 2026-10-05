@@ -317,13 +317,9 @@ socket.emit("player:register", {
 
     const quitter = useCallback(() => {
         const socket = socketRef.current;
-        const currentMatch =
-            matchRef.current;
+        const currentMatch = matchRef.current;
 
-        if (
-            currentMatch &&
-            socket.connected
-        ) {
+        if (currentMatch && socket.connected) {
             socket.emit(
                 "match:leave",
                 currentMatch.matchId
@@ -337,9 +333,9 @@ socket.emit("player:register", {
         setOpponentAnswered(false);
         setIsConnected(false);
 
-        // ⚠️ On NE supprime PAS le pseudo.
-        // Il sera encore là au prochain lancement.
-        setPhase("pseudo");
+        // Le pseudo est sauvegardé.
+        // On retourne donc au menu multijoueur.
+        setPhase("menu");
     }, []);
 
     const annulerRecherche = useCallback(() => {

@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-const SERVER_URL = "http://10.0.0.35:3001";
+const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
 let socket: Socket | null = null;
 

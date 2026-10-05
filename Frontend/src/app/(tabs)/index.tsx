@@ -3,9 +3,13 @@ import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+
 import { styles } from "../../styles/homeStyles";
 import OnboardingModal from "../../components/OnboardingModal";
-import { hasSeenOnboarding, markOnboardingSeen } from "../../lib/onboarding";
+import {
+    hasSeenOnboarding,
+    markOnboardingSeen,
+} from "../../lib/onboarding";
 
 export default function Home() {
     const router = useRouter();
@@ -14,7 +18,9 @@ export default function Home() {
 
     useEffect(() => {
         hasSeenOnboarding().then((seen) => {
-            if (!seen) setOnboardingVisible(true);
+            if (!seen) {
+                setOnboardingVisible(true);
+            }
         });
     }, []);
 
@@ -24,10 +30,15 @@ export default function Home() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView
+            style={styles.container}
+            edges={["top"]}
+        >
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Le Compte est Bon</Text>
+                    <Text style={styles.title}>
+                        Le Compte est Juste
+                    </Text>
 
                     <View
                         style={{
@@ -38,12 +49,19 @@ export default function Home() {
                             marginTop: 3,
                         }}
                     >
-                        <Text style={[styles.subtitle, { marginTop: 0 }]}>
+                        <Text
+                            style={[
+                                styles.subtitle,
+                                { marginTop: 0 },
+                            ]}
+                        >
                             Choisissez un mode de jeu
                         </Text>
 
                         <Pressable
-                            onPress={() => setOnboardingVisible(true)}
+                            onPress={() =>
+                                setOnboardingVisible(true)
+                            }
                             style={{
                                 width: 22,
                                 height: 22,
@@ -54,36 +72,63 @@ export default function Home() {
                             }}
                             hitSlop={8}
                         >
-                            <Ionicons name="help-outline" size={14} color="#FFFFFF" />
+                            <Ionicons
+                                name="help-outline"
+                                size={14}
+                                color="#FFFFFF"
+                            />
                         </Pressable>
                     </View>
                 </View>
 
                 <Pressable
                     onPress={() => router.push("/solo")}
-                    style={[styles.modeCard, styles.soloCard]}
+                    style={[
+                        styles.modeCard,
+                        styles.soloCard,
+                    ]}
                 >
-                    <Text style={styles.modeIcon}>🎯</Text>
-                    <Text style={styles.modeTitle}>Solo</Text>
+                    <Text style={styles.modeIcon}>
+                        🎯
+                    </Text>
+
+                    <Text style={styles.modeTitle}>
+                        Solo
+                    </Text>
+
                     <Text style={styles.modeDescription}>
-                        Entraînez-vous à votre rythme, sans limite de temps
+                        Entraînez-vous à votre rythme, sans
+                        limite de temps
                     </Text>
                 </Pressable>
 
                 <Pressable
-                    onPress={() => router.push("/multiplayer")}
-                    style={[styles.modeCard, styles.multiplayerCard]}
+                    onPress={() =>
+                        router.push("/multiplayer")
+                    }
+                    style={[
+                        styles.modeCard,
+                        styles.multiplayerCard,
+                    ]}
                 >
-                    <Text style={styles.modeIcon}>⚔️</Text>
-                    <Text style={styles.modeTitle}>1v1 Multijoueur</Text>
+                    <Text style={styles.modeIcon}>
+                        ⚔️
+                    </Text>
+
+                    <Text style={styles.modeTitle}>
+                        1v1 Multijoueur
+                    </Text>
+
                     <Text style={styles.modeDescription}>
-                        Affrontez un adversaire en temps réel, chrono en main
+                        Affrontez un adversaire en temps réel,
+                        chrono en main
                     </Text>
                 </Pressable>
 
-                {/* 2. Modification du bouton de classement pour inclure l'icône */}
                 <Pressable
-                    onPress={() => router.push("/leaderboard")}
+                    onPress={() =>
+                        router.push("/leaderboard")
+                    }
                     style={[
                         styles.leaderboardLink,
                         {
@@ -94,8 +139,19 @@ export default function Home() {
                         },
                     ]}
                 >
-                    <MaterialIcons name="leaderboard" size={20} color="#FFD700" />
-                    <Text style={styles.leaderboardLinkText}>Voir le classement mondial</Text>
+                    <MaterialIcons
+                        name="leaderboard"
+                        size={20}
+                        color="#FFD700"
+                    />
+
+                    <Text
+                        style={
+                            styles.leaderboardLinkText
+                        }
+                    >
+                        Voir le classement mondial
+                    </Text>
                 </Pressable>
             </View>
 

@@ -7,7 +7,7 @@ export const lbStyles = StyleSheet.create({
         paddingTop: 10,
     },
 
-        leaderboardHeader: {
+    leaderboardHeader: {
         alignItems: "center",
         marginBottom: 12,
         position: "relative",
@@ -47,7 +47,7 @@ export const lbStyles = StyleSheet.create({
         color: "#94A3B8",
         marginTop: 2,
         textAlign: "center",
-    }, 
+    },
 
     leaderboardList: {
         paddingBottom: 24,
@@ -64,14 +64,21 @@ export const lbStyles = StyleSheet.create({
         backgroundColor: "#111C33",
         borderWidth: 1,
         borderColor: "#1E293B",
+
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
                 shadowOpacity: 0.2,
                 shadowRadius: 6,
-                shadowOffset: { width: 0, height: 2 },
+                shadowOffset: {
+                    width: 0,
+                    height: 2,
+                },
             },
-            android: { elevation: 2 },
+
+            android: {
+                elevation: 2,
+            },
         }),
     },
 
@@ -79,13 +86,17 @@ export const lbStyles = StyleSheet.create({
         backgroundColor: "#1E1B4B",
         borderWidth: 1.5,
         borderColor: "#FBBF24",
+
         ...Platform.select({
             ios: {
                 shadowColor: "#FBBF24",
                 shadowOpacity: 0.25,
                 shadowRadius: 10,
             },
-            android: { elevation: 4 },
+
+            android: {
+                elevation: 4,
+            },
         }),
     },
 
@@ -124,6 +135,26 @@ export const lbStyles = StyleSheet.create({
         marginTop: 4,
     },
 
+    // ─────────────────────────────
+    // POINTS
+    // ─────────────────────────────
+
+    leaderboardPointsPositive: {
+        color: "#4ADE80",
+    },
+
+    leaderboardPointsZero: {
+        color: "#94A3B8",
+    },
+
+    leaderboardPointsNegative: {
+        color: "#F87171",
+    },
+
+    // ─────────────────────────────
+    // TAUX
+    // ─────────────────────────────
+
     leaderboardRate: {
         width: 60,
         alignItems: "flex-end",
@@ -144,6 +175,10 @@ export const lbStyles = StyleSheet.create({
         letterSpacing: 0.5,
     },
 
+    // ─────────────────────────────
+    // LOADING
+    // ─────────────────────────────
+
     leaderboardLoading: {
         flex: 1,
         alignItems: "center",
@@ -157,6 +192,10 @@ export const lbStyles = StyleSheet.create({
         fontWeight: "600",
         color: "#94A3B8",
     },
+
+    // ─────────────────────────────
+    // ERROR
+    // ─────────────────────────────
 
     leaderboardError: {
         fontSize: 15,
@@ -180,6 +219,10 @@ export const lbStyles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "800",
     },
+
+    // ─────────────────────────────
+    // JOUEUR ACTUEL
+    // ─────────────────────────────
 
     leaderboardMeRow: {
         borderWidth: 1.5,

@@ -1,4 +1,4 @@
 node_modules/
 .expo/
 dist/
-*.log
+*.logFrontend/google-service-account.json
