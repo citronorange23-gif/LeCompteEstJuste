@@ -55,6 +55,8 @@ export type LeaderboardEntry = {
     pseudo: string;
     wins: number;
     losses: number;
+    draws: number;
+    points: number;
 };
 
 export interface ClientToServerEvents {
@@ -75,6 +77,8 @@ export interface ClientToServerEvents {
     "match:leave": (matchId: string) => void;
 
     "leaderboard:get": () => void;
+
+    "solo:score": (payload: { points: number }) => void;
 
     // ClientToServerEvents
     "invite:create": () => void;
@@ -123,6 +127,9 @@ export interface ServerToClientEvents {
     "leaderboard:top": (payload: {
         players: LeaderboardEntry[];
     }) => void;
+
+    "solo:score-recorded": (payload: { points: number }) => void;
+    "solo:score-error": (payload: { message: string }) => void;
 
     "server:maintenance": (payload: { message: string }) => void;
 

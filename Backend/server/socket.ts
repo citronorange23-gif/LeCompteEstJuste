@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { Matchmaking } from "./matchmaking";
 import { GameSessionManager } from "./session";
-import { registerOrGetPlayer } from "./player";
+import { recordSoloScore, registerOrGetPlayer } from "./player";
 import { getTopPlayers } from "./leaderboard";
 import { validatePseudo } from "./validation";
 import { isRateLimited } from "./rateLimiter";
@@ -169,51 +169,85 @@ export const setupSocketServer = (
                 matchmaking.leave(socket.id);
             });
 
-            // ==========================================
-            // 👥 GESTION DES INVITATIONS AMIS (DEEP LINKS)
-            // ==========================================
-            socket.on("invite:create", async () => {
-                const player = socketToPlayer.get(socket.id);
-                if (!player) return;
+            // // ==========================================
+            // // 👥 GESTION DES INVITATIONS AMIS (DEEP LINKS)
+            // // ==========================================
+            // socket.on("invite:create", async () => {
+            //     const player = socketToPlayer.get(socket.id);
+            //     if (!player) return;
 
-                try {
-                    const invite = await createGameInvite(player.id);
+            //     try {
+            //         const invite = await createGameInvite(player.id);
                     
-                    // On envoie uniquement l'ID, le front gérera le format de l'URL
-                    socket.emit("invite:created", { inviteId: invite.id });
-                } catch (err) {
-                    socket.emit("invite:error", { message: "Erreur lors de la création de l'invitation." });
-                }
-            });
+            //         // On envoie uniquement l'ID, le front gérera le format de l'URL
+            //         socket.emit("invite:created", { inviteId: invite.id });
+            //     } catch (err) {
+            //         socket.emit("invite:error", { message: "Erreur lors de la création de l'invitation." });
+            //     }
+            // });
 
-            socket.on("invite:accept", async (inviteId) => {
+            // socket.on("invite:accept", async (inviteId) => {
+            //     const player = socketToPlayer.get(socket.id);
+            //     if (!player) {
+            //         socket.emit("player:error", { code: "not_registered", message: "Enregistre-toi avant de rejoindre une partie." });
+            //         return;
+            //     }
+
+            //     const result = await getAndValidateInvite(inviteId);
+            //     if ("error" in result) {
+            //         socket.emit("invite:error", { message: `Invitation invalide ou expirée (${result.error}).` });
+            //         return;
+            //     }
+
+            //     const { invite } = result;
+            //     if (invite.playerId === player.id) {
+            //         socket.emit("invite:error", { message: "Tu ne peux pas t'inviter toi-même." });
+            //         return;
+            //     }
+
+            //     // Récupérer le joueur hôte s'il est connecté
+            //     const hostPlayer = Array.from(socketToPlayer.values()).find(p => p.id === invite.playerId);
+            //     if (!hostPlayer) {
+            //         socket.emit("invite:error", { message: "L'hôte de la partie est déconnecté." });
+            //         return;
+            //     }
+
+            //     // Lancer la partie directement entre les deux joueurs
+            //     sessions.createMatch(hostPlayer, player);
+            // });
+
+            socket.on("solo:score", async ({ points }) => {
                 const player = socketToPlayer.get(socket.id);
                 if (!player) {
-                    socket.emit("player:error", { code: "not_registered", message: "Enregistre-toi avant de rejoindre une partie." });
+                    socket.emit("solo:score-error", {
+                        message: "Enregistre-toi avant de sauvegarder ton score.",
+                    });
                     return;
                 }
 
-                const result = await getAndValidateInvite(inviteId);
-                if ("error" in result) {
-                    socket.emit("invite:error", { message: `Invitation invalide ou expirée (${result.error}).` });
+                if (isRateLimited(`solo-score:${socket.id}`, 20, 60_000)) {
+                    socket.emit("solo:score-error", {
+                        message: "Trop de scores envoyés, réessaie plus tard.",
+                    });
                     return;
                 }
 
-                const { invite } = result;
-                if (invite.playerId === player.id) {
-                    socket.emit("invite:error", { message: "Tu ne peux pas t'inviter toi-même." });
+                if (!Number.isInteger(points) || points < 0 || points > 10) {
+                    socket.emit("solo:score-error", {
+                        message: "Le score envoyé est invalide.",
+                    });
                     return;
                 }
 
-                // Récupérer le joueur hôte s'il est connecté
-                const hostPlayer = Array.from(socketToPlayer.values()).find(p => p.id === invite.playerId);
-                if (!hostPlayer) {
-                    socket.emit("invite:error", { message: "L'hôte de la partie est déconnecté." });
-                    return;
+                try {
+                    await recordSoloScore(player.id, points);
+                    socket.emit("solo:score-recorded", { points });
+                } catch (err) {
+                    console.error("Erreur sauvegarde score solo:", err);
+                    socket.emit("solo:score-error", {
+                        message: "Impossible de sauvegarder le score.",
+                    });
                 }
-
-                // Lancer la partie directement entre les deux joueurs
-                sessions.createMatch(hostPlayer, player);
             });
 
             socket.on(

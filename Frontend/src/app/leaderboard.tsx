@@ -165,8 +165,8 @@ export default function Leaderboard() {
 
                     <Text style={lbStyles.leaderboardStats}>
                         {total === 0
-                            ? "Aucune partie jouée"
-                            : `${item.wins} victoire${
+                            ? "Aucune partie multijoueur"
+                                : `${item.wins} victoire${
                                   item.wins !== 1 ? "s" : ""
                               } • ${item.losses} défaite${
                                   item.losses !== 1 ? "s" : ""

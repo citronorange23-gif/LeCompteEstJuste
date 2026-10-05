@@ -10,7 +10,7 @@ export async function createGameInvite(playerId: string) {
     const invite = await prisma.gameInvite.create({
         data: {
             playerId,
-            gameId: randomUUID(),
+            matchId: randomUUID(),
             expiresAt,
             status: "PENDING",
         },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ScrollView,
     View,
@@ -18,6 +18,7 @@ import {
 } from "../lib/algorithm";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationBar } from "expo-navigation-bar";
+import { submitSoloScore } from "../lib/player";
 
 type NumEntry = { id: number; value: number; used: boolean };
 
@@ -25,6 +26,18 @@ type HistoryEntry = {
     numbers: NumEntry[];
     steps: string[];
     nextId: number;
+};
+
+const applyHintPenalty = (
+    baseScore: number,
+    hintsUsed: number,
+    totalHints: number
+) => {
+    if (totalHints <= 0) return baseScore;
+
+    return Math.floor(
+        baseScore * Math.max(0, totalHints - hintsUsed) / totalHints
+    );
 };
 
 export default function Solo() {
@@ -49,6 +62,8 @@ export default function Solo() {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [solutionVisible, setSolutionVisible] = useState(false);
     const [hintsRevealed, setHintsRevealed] = useState(0);
+    const [scoreSaveStatus, setScoreSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+    const scoreSubmitted = useRef(false);
 
     useEffect(() => {
         if (Platform.OS === "android") {
@@ -78,6 +93,8 @@ export default function Solo() {
         setMeilleurEcart(null);
         setSolutionVisible(false);
         setHintsRevealed(0);
+        setScoreSaveStatus("idle");
+        scoreSubmitted.current = false;
     };
 
     const demanderNouvellePartie = () => {
@@ -96,6 +113,8 @@ export default function Solo() {
     };
 
     const ouvrirIndices = () => {
+        if (validated) return;
+
         setSolutionVisible(true);
 
         if (hintsRevealed === 0) {
@@ -188,8 +207,21 @@ export default function Solo() {
         setPendingOp(op);
     };
 
+    const sauvegarderScore = (points: number) => {
+        setScoreSaveStatus("saving");
+        submitSoloScore(points)
+            .then(() => setScoreSaveStatus("saved"))
+            .catch((error: unknown) => {
+                console.error("Erreur sauvegarde score solo:", error);
+                setScoreSaveStatus("error");
+            });
+    };
+
     const valider = (liste: NumEntry[] = numbers) => {
+        if (validated || scoreSubmitted.current) return;
+
         setValidated(true);
+        setSolutionVisible(false);
 
         const ecart = liste
             .filter((n) => !n.used)
@@ -199,7 +231,16 @@ export default function Solo() {
             );
 
         setMeilleurEcart(ecart);
-        setScore(computeScore(ecart));
+        const baseScore = computeScore(ecart);
+        const finalScore = applyHintPenalty(
+            baseScore,
+            hintsRevealed,
+            game.solution.length
+        );
+
+        setScore(finalScore);
+        scoreSubmitted.current = true;
+        sauvegarderScore(finalScore);
     };
 
     const won = score === 10;
@@ -208,6 +249,18 @@ export default function Solo() {
         selectedId !== null
             ? numbers.find((n) => n.id === selectedId)?.value
             : null;
+
+    const bestCurrentDifference = numbers
+        .filter((n) => !n.used)
+        .reduce(
+            (best, n) => Math.min(best, Math.abs(n.value - game.target)),
+            Infinity
+        );
+    const currentPotentialScore = applyHintPenalty(
+        computeScore(bestCurrentDifference),
+        hintsRevealed,
+        game.solution.length
+    );
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -256,6 +309,22 @@ export default function Solo() {
                                 ? `Bravo, compte exact ! ${score} points`
                                 : `Écart de ${meilleurEcart} — ${score} points`}
                         </Text>
+                        <Text style={styles.subtitle}>
+                            {scoreSaveStatus === "saving"
+                                ? "Enregistrement au classement..."
+                                : scoreSaveStatus === "saved"
+                                    ? "Score ajouté au classement"
+                                    : scoreSaveStatus === "error"
+                                        ? "Score non enregistré au classement"
+                                        : ""}
+                        </Text>
+                        {scoreSaveStatus === "error" && score !== null && (
+                            <Pressable onPress={() => sauvegarderScore(score)}>
+                                <Text style={styles.solutionButtonText}>
+                                    Réessayer l’enregistrement
+                                </Text>
+                            </Pressable>
+                        )}
                     </View>
                 )}
 
@@ -329,6 +398,12 @@ export default function Solo() {
                     </View>
                 )}
 
+                {!validated && (
+                    <Text style={styles.subtitle}>
+                        Points encore possibles : {currentPotentialScore}
+                    </Text>
+                )}
+
                 {history.length > 0 && !validated && (
                     <Pressable onPress={retourArriere} style={styles.undoButton}>
                         <Text style={styles.undoText}>Retour en arrière</Text>
@@ -337,6 +412,7 @@ export default function Solo() {
 
                 <Pressable
                     onPress={ouvrirIndices}
+                    disabled={validated}
                     style={styles.solutionButton}
                 >
                     <Text style={styles.solutionButtonText}>
@@ -347,6 +423,17 @@ export default function Solo() {
                             : "Voir mes indices"}
                     </Text>
                 </Pressable>
+
+                {!validated && (
+                    <Pressable
+                        onPress={() => valider()}
+                        style={styles.newGameButton}
+                    >
+                        <Text style={styles.newGameText}>
+                            Terminer et compter mon score
+                        </Text>
+                    </Pressable>
+                )}
 
                 <Pressable
                     onPress={demanderNouvellePartie}

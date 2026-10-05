@@ -40,17 +40,26 @@ export const recordMatchResult = async (
     loserId: string | null,
     isDraw: boolean = false
 ) => {
+    const DRAW_POINTS = 3;
+    const WIN_POINTS = 15;
+
     if (isDraw) {
         if (winnerId) {
             await prisma.player.update({
                 where: { id: winnerId },
-                data: { draws: { increment: 1 } },
+                data: {
+                    draws: { increment: 1 },
+                    points: { increment: DRAW_POINTS },
+                },
             });
         }
         if (loserId) {
             await prisma.player.update({
                 where: { id: loserId },
-                data: { draws: { increment: 1 } },
+                data: {
+                    draws: { increment: 1 },
+                    points: { increment: DRAW_POINTS },
+                },
             });
         }
         return;
@@ -61,7 +70,7 @@ export const recordMatchResult = async (
             where: { id: winnerId },
             data: {
                 wins: { increment: 1 },
-                points: { increment: 1 },
+                points: { increment: WIN_POINTS },
             },
         });
     }
@@ -71,8 +80,17 @@ export const recordMatchResult = async (
             where: { id: loserId },
             data: {
                 losses: { increment: 1 },
-                points: { decrement: 1 },
             },
         });
     }
+};
+
+export const recordSoloScore = async (
+    playerId: string,
+    points: number
+) => {
+    await prisma.player.update({
+        where: { id: playerId },
+        data: { points: { increment: points } },
+    });
 };

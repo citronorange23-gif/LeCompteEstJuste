@@ -15,8 +15,8 @@ export default function PseudoScreen() {
     const valider = async () => {
         const value = pseudo.trim();
 
-        if (value.length < 2) {
-            setError("Le pseudo doit contenir au moins 2 caractères");
+        if (value.length < 3) {
+            setError("Le pseudo doit contenir au moins 3 caractères");
             return;
         }
 
