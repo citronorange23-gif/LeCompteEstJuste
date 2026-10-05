@@ -80,17 +80,12 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
     },
 
-    winBanner: {
-        backgroundColor: "#14532D",
-        borderColor: "#22C55E",
+    scoreBanner: {
+        backgroundColor: "#422006",
+        borderColor: "#FBBF24",
     },
 
-    loseBanner: {
-        backgroundColor: "#7F1D1D",
-        borderColor: "#EF4444",
-    },
-
-    winText: {
+    resultText: {
         color: "#FFFFFF",
         fontWeight: "700",
         fontSize: 13,

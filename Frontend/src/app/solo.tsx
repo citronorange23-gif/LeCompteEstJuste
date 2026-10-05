@@ -57,7 +57,6 @@ export default function Solo() {
 
     const [validated, setValidated] = useState(false);
     const [score, setScore] = useState<number | null>(null);
-    const [meilleurEcart, setMeilleurEcart] = useState<number | null>(null);
 
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [solutionVisible, setSolutionVisible] = useState(false);
@@ -90,7 +89,6 @@ export default function Solo() {
         setHistory([]);
         setValidated(false);
         setScore(null);
-        setMeilleurEcart(null);
         setSolutionVisible(false);
         setHintsRevealed(0);
         setScoreSaveStatus("idle");
@@ -230,7 +228,6 @@ export default function Solo() {
                 Infinity
             );
 
-        setMeilleurEcart(ecart);
         const baseScore = computeScore(ecart);
         const finalScore = applyHintPenalty(
             baseScore,
@@ -242,8 +239,6 @@ export default function Solo() {
         scoreSubmitted.current = true;
         sauvegarderScore(finalScore);
     };
-
-    const won = score === 10;
 
     const selectedValue =
         selectedId !== null
@@ -301,13 +296,11 @@ export default function Solo() {
                     <View
                         style={[
                             styles.resultBanner,
-                            won ? styles.winBanner : styles.loseBanner,
+                            styles.scoreBanner,
                         ]}
                     >
-                        <Text style={styles.winText}>
-                            {won
-                                ? `Bravo, compte exact ! ${score} points`
-                                : `Écart de ${meilleurEcart} — ${score} points`}
+                        <Text style={styles.resultText}>
+                            Combinaison trouvée ! {score} points gagnés
                         </Text>
                         <Text style={styles.subtitle}>
                             {scoreSaveStatus === "saving"
@@ -423,17 +416,6 @@ export default function Solo() {
                             : "Voir mes indices"}
                     </Text>
                 </Pressable>
-
-                {!validated && (
-                    <Pressable
-                        onPress={() => valider()}
-                        style={styles.newGameButton}
-                    >
-                        <Text style={styles.newGameText}>
-                            Terminer et compter mon score
-                        </Text>
-                    </Pressable>
-                )}
 
                 <Pressable
                     onPress={demanderNouvellePartie}
