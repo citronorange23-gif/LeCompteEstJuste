@@ -40,6 +40,7 @@ export class GameSessionManager {
             players: [playerA, playerB],
             numbers: partie.numbers,
             target: partie.target,
+            solution: partie.solution,
             timeLimitMs,
             startAt: Date.now(),
             submissions: new Map(),
@@ -70,6 +71,7 @@ export class GameSessionManager {
                 },
                 numbers: match.numbers,
                 target: match.target,
+                solution: match.solution,
                 timeLimitMs: match.timeLimitMs,
                 startAt: match.startAt,
             });
@@ -236,6 +238,7 @@ export class GameSessionManager {
                           },
                     numbers: match.numbers,
                     target: match.target,
+                    solution: match.solution,
                     timeLimitMs: match.timeLimitMs,
                     startAt: match.startAt,
                 });

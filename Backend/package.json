@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "start": "tsx server/index.ts"
+    "start": "tsx server/index.ts",
+    "db:deploy": "prisma migrate deploy --config prisma7.config.ts",
+    "test": "tsx --test server/soloChallenge.test.ts"
   },
   "keywords": [],
   "author": "",

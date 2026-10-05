@@ -32,10 +32,8 @@
       [
         "expo-navigation-bar",
         {
-          "visibility": "hidden",
-          "behavior": "overlay-swipe",
-          "position": "absolute",
-          "barStyle": "light"
+          "hidden": true,
+          "style": "light"
         }
       ]
     ],

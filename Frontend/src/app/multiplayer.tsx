@@ -816,7 +816,11 @@ export default function Multiplayer() {
                 style={styles.container}
                 edges={["top"]}
             >
-                <View style={mpStyles.centered}>
+                <ScrollView
+                    style={mpStyles.resultScroll}
+                    contentContainerStyle={mpStyles.resultContent}
+                    showsVerticalScrollIndicator={false}
+                >
                     <View
                         style={[
                             mpStyles.resultBanner,
@@ -882,6 +886,22 @@ export default function Multiplayer() {
                         </Text>
                     )}
 
+                    {match?.solution && match.solution.length > 0 && (
+                        <View style={mpStyles.matchSolution}>
+                            <Text style={mpStyles.matchSolutionTitle}>
+                                Solution
+                            </Text>
+                            {match.solution.map((step, index) => (
+                                <Text
+                                    key={`${index}-${step}`}
+                                    style={mpStyles.matchSolutionStep}
+                                >
+                                    {index + 1}. {step}
+                                </Text>
+                            ))}
+                        </View>
+                    )}
+
                     <Pressable
                         onPress={rejouer}
                         style={mpStyles.primaryButton}
@@ -908,7 +928,7 @@ export default function Multiplayer() {
                             Retour à l'accueil
                         </Text>
                     </Pressable>
-                </View>
+                </ScrollView>
             </SafeAreaView>
         );
     }

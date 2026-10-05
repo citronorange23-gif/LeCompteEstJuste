@@ -94,3 +94,4 @@ export const recordSoloScore = async (
         data: { points: { increment: points } },
     });
 };
+

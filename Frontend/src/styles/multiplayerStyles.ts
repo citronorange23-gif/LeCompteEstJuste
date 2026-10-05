@@ -220,6 +220,42 @@ export const mpStyles = StyleSheet.create({
         paddingHorizontal: 8,
     },
 
+    resultScroll: {
+        flex: 1,
+    },
+
+    resultContent: {
+        flexGrow: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 24,
+        paddingVertical: 20,
+        gap: 14,
+    },
+
+    matchSolution: {
+        width: "100%",
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: "#111C33",
+        borderWidth: 1,
+        borderColor: "#334155",
+        gap: 8,
+    },
+
+    matchSolutionTitle: {
+        color: "#FBBF24",
+        fontSize: 15,
+        fontWeight: "800",
+        marginBottom: 2,
+    },
+
+    matchSolutionStep: {
+        color: "#E2E8F0",
+        fontSize: 14,
+        lineHeight: 20,
+    },
+
     // ─────────────────────────────
     // CARTE RÉSULTAT JOUEUR
     // ─────────────────────────────

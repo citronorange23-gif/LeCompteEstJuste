@@ -437,9 +437,15 @@ abandonText: {
     },
 
 
-    solutionScroll: {
-        maxHeight: 260,
-        marginBottom: 18,
+    solutionModalScroll: {
+        flex: 1,
+        width: "100%",
+    },
+
+    solutionModalContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingVertical: 20,
     },
 
     solutionLine: {

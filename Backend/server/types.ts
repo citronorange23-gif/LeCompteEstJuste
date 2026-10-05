@@ -17,6 +17,7 @@ export type MatchState = {
     players: Player[];
     numbers: number[];
     target: number;
+    solution: string[];
     timeLimitMs: number;
     startAt: number;
     submissions: Map<string, Submission>;
@@ -59,6 +60,13 @@ export type LeaderboardEntry = {
     points: number;
 };
 
+export type SoloOperation = {
+    first: number;
+    operator: "+" | "-" | "×" | "÷";
+    second: number;
+    result: number;
+};
+
 export interface ClientToServerEvents {
     "player:register": (payload: {
         id: string;
@@ -78,7 +86,13 @@ export interface ClientToServerEvents {
 
     "leaderboard:get": () => void;
 
-    "solo:score": (payload: { points: number }) => void;
+    "solo:challenge:start": () => void;
+    "solo:hint": (payload: { challengeId: string }) => void;
+    "solo:submit": (payload: {
+        challengeId: string;
+        operations: SoloOperation[];
+        hintsUsed: number;
+    }) => void;
 
     // ClientToServerEvents
     "invite:create": () => void;
@@ -107,6 +121,7 @@ export interface ServerToClientEvents {
         };
         numbers: number[];
         target: number;
+        solution: string[];
         timeLimitMs: number;
         startAt: number;
     }) => void;
@@ -128,8 +143,26 @@ export interface ServerToClientEvents {
         players: LeaderboardEntry[];
     }) => void;
 
-    "solo:score-recorded": (payload: { points: number }) => void;
-    "solo:score-error": (payload: { message: string }) => void;
+    "solo:challenge": (payload: {
+        challengeId: string;
+        numbers: number[];
+        target: number;
+        solution: string[];
+        expiresAt: number;
+    }) => void;
+    "solo:hint-revealed": (payload: {
+        challengeId: string;
+        hintIndex: number;
+        hintsUsed: number;
+        hint: string;
+    }) => void;
+    "solo:score-recorded": (payload: { challengeId: string; points: number }) => void;
+    "solo:error": (payload: {
+        challengeId?: string;
+        code: string;
+        message: string;
+        retryable: boolean;
+    }) => void;
 
     "server:maintenance": (payload: { message: string }) => void;
 

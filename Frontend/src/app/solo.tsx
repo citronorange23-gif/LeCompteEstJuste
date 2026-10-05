@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     ScrollView,
     View,
@@ -6,6 +6,7 @@ import {
     Pressable,
     Modal,
     Platform,
+    ActivityIndicator,
 } from "react-native";
 import { styles } from "../styles/styles";
 import { useRouter } from "expo-router";
@@ -14,11 +15,19 @@ import {
     genererPartie,
     computeResult,
     computeScore,
+    computeReachableMap,
     type Game,
 } from "../lib/algorithm";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationBar } from "expo-navigation-bar";
-import { submitSoloScore } from "../lib/player";
+import {
+    recordSoloHint,
+    startSoloChallenge,
+    submitSoloOperations,
+    syncPendingSoloScores,
+    type SoloOperation,
+} from "../lib/player";
+import { getSocket } from "../lib/socket";
 
 type NumEntry = { id: number; value: number; used: boolean };
 
@@ -26,6 +35,7 @@ type HistoryEntry = {
     numbers: NumEntry[];
     steps: string[];
     nextId: number;
+    operations: SoloOperation[];
 };
 
 const applyHintPenalty = (
@@ -44,6 +54,10 @@ export default function Solo() {
     const router = useRouter();
 
     const [game, setGame] = useState<Game>(() => genererPartie());
+    const [isStartingGame, setIsStartingGame] = useState(true);
+    const [challengeId, setChallengeId] = useState<string | null>(null);
+    const challengeIdRef = useRef<string | null>(null);
+    const [rankedEligible, setRankedEligible] = useState(false);
 
     const [numbers, setNumbers] = useState<NumEntry[]>(() =>
         game.numbers.map((value, index) => ({ id: index, value, used: false }))
@@ -53,6 +67,7 @@ export default function Solo() {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [pendingOp, setPendingOp] = useState<string | null>(null);
     const [steps, setSteps] = useState<string[]>([]);
+    const [operations, setOperations] = useState<SoloOperation[]>([]);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
 
     const [validated, setValidated] = useState(false);
@@ -61,7 +76,8 @@ export default function Solo() {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [solutionVisible, setSolutionVisible] = useState(false);
     const [hintsRevealed, setHintsRevealed] = useState(0);
-    const [scoreSaveStatus, setScoreSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+    const [isRevealingHint, setIsRevealingHint] = useState(false);
+    const [scoreSaveStatus, setScoreSaveStatus] = useState<"idle" | "saving" | "saved" | "queued" | "unranked" | "rejected" | "error">("idle");
     const scoreSubmitted = useRef(false);
 
     useEffect(() => {
@@ -71,10 +87,27 @@ export default function Solo() {
         }
     }, []);
 
-    const nouvellePartie = () => {
-        const nouvelleGame = genererPartie();
+    const nouvellePartie = async () => {
+        setIsStartingGame(true);
+        setSolutionVisible(false);
+        setConfirmVisible(false);
+        setRankedEligible(false);
+        setChallengeId(null);
+        challengeIdRef.current = null;
+
+        const serverChallenge = await startSoloChallenge();
+        const nouvelleGame: Game = serverChallenge
+            ? {
+                  numbers: serverChallenge.numbers,
+                  target: serverChallenge.target,
+                  solution: serverChallenge.solution,
+              }
+            : genererPartie();
 
         setGame(nouvelleGame);
+        setChallengeId(serverChallenge?.challengeId ?? null);
+        challengeIdRef.current = serverChallenge?.challengeId ?? null;
+        setRankedEligible(serverChallenge !== null);
         setNumbers(
             nouvelleGame.numbers.map((value, index) => ({
                 id: index,
@@ -86,20 +119,51 @@ export default function Solo() {
         setSelectedId(null);
         setPendingOp(null);
         setSteps([]);
+        setOperations([]);
         setHistory([]);
         setValidated(false);
         setScore(null);
-        setSolutionVisible(false);
         setHintsRevealed(0);
+        setIsRevealingHint(false);
         setScoreSaveStatus("idle");
         scoreSubmitted.current = false;
+        setIsStartingGame(false);
     };
+
+    useEffect(() => {
+        void nouvellePartie();
+
+        const socket = getSocket();
+        const onConnect = () => void syncPendingSoloScores();
+        const onScoreRecorded = ({ challengeId: savedChallengeId }: { challengeId: string }) => {
+            if (savedChallengeId === challengeIdRef.current) {
+                setScoreSaveStatus("saved");
+            }
+        };
+        const onScoreError = (payload: {
+            challengeId?: string;
+            retryable: boolean;
+        }) => {
+            if (payload.challengeId !== challengeIdRef.current) return;
+            setScoreSaveStatus(payload.retryable ? "queued" : "rejected");
+        };
+
+        socket.on("connect", onConnect);
+        socket.on("solo:score-recorded", onScoreRecorded);
+        socket.on("solo:error", onScoreError);
+
+        return () => {
+            socket.off("connect", onConnect);
+            socket.off("solo:score-recorded", onScoreRecorded);
+            socket.off("solo:error", onScoreError);
+        };
+    }, []);
 
     const demanderNouvellePartie = () => {
         setSolutionVisible(false);
 
         if (validated) {
-            nouvellePartie();
+            void nouvellePartie();
             return;
         }
         setConfirmVisible(true);
@@ -107,23 +171,30 @@ export default function Solo() {
 
     const confirmerNouvellePartie = () => {
         setConfirmVisible(false);
-        nouvellePartie();
+        void nouvellePartie();
+    };
+
+    const revelerIndiceSuivant = async () => {
+        if (validated || isRevealingHint || hintsRevealed >= game.solution.length) return;
+
+        setIsRevealingHint(true);
+        if (challengeId && rankedEligible) {
+            const recorded = await recordSoloHint(challengeId);
+            if (!recorded) setRankedEligible(false);
+        }
+        setHintsRevealed((previous) => Math.min(previous + 1, game.solution.length));
+        setIsRevealingHint(false);
     };
 
     const ouvrirIndices = () => {
         if (validated) return;
 
         setSolutionVisible(true);
-
-        if (hintsRevealed === 0) {
-            setHintsRevealed(1);
-        }
+        if (hintsRevealed === 0) void revelerIndiceSuivant();
     };
 
     const indiceSuivant = () => {
-        setHintsRevealed((prev) =>
-            Math.min(prev + 1, game.solution.length)
-        );
+        void revelerIndiceSuivant();
     };
 
     const selectNumber = (id: number) => {
@@ -159,7 +230,15 @@ export default function Solo() {
             return;
         }
 
-        setHistory((prev) => [...prev, { numbers, steps, nextId }]);
+        setHistory((prev) => [...prev, { numbers, steps, nextId, operations }]);
+
+        const operation: SoloOperation = {
+            first: first.value,
+            operator: pendingOp as SoloOperation["operator"],
+            second: second.value,
+            result: resultat,
+        };
+        const newOperations = [...operations, operation];
 
         const nouveauNombre: NumEntry = {
             id: nextId,
@@ -181,9 +260,10 @@ export default function Solo() {
             ...prev,
             `${first.value} ${pendingOp} ${second.value} = ${resultat}`,
         ]);
+        setOperations(newOperations);
 
         if (resultat === game.target) {
-            valider(nouvelleListe);
+            valider(nouvelleListe, newOperations);
         }
     };
 
@@ -195,6 +275,7 @@ export default function Solo() {
         setNumbers(dernierEtat.numbers);
         setSteps(dernierEtat.steps);
         setNextId(dernierEtat.nextId);
+        setOperations(dernierEtat.operations);
         setHistory((prev) => prev.slice(0, -1));
         setSelectedId(null);
         setPendingOp(null);
@@ -205,17 +286,30 @@ export default function Solo() {
         setPendingOp(op);
     };
 
-    const sauvegarderScore = (points: number) => {
+    const sauvegarderScore = async (submittedOperations: SoloOperation[]) => {
+        if (!challengeId || !rankedEligible) {
+            setScoreSaveStatus("unranked");
+            return;
+        }
+
         setScoreSaveStatus("saving");
-        submitSoloScore(points)
-            .then(() => setScoreSaveStatus("saved"))
-            .catch((error: unknown) => {
-                console.error("Erreur sauvegarde score solo:", error);
-                setScoreSaveStatus("error");
+        try {
+            const result = await submitSoloOperations({
+                challengeId,
+                operations: submittedOperations,
+                hintsUsed: hintsRevealed,
             });
+            setScoreSaveStatus(result);
+        } catch (error) {
+            console.error("Erreur mise en attente du score solo:", error);
+            setScoreSaveStatus("error");
+        }
     };
 
-    const valider = (liste: NumEntry[] = numbers) => {
+    const valider = (
+        liste: NumEntry[] = numbers,
+        submittedOperations: SoloOperation[] = operations
+    ) => {
         if (validated || scoreSubmitted.current) return;
 
         setValidated(true);
@@ -237,7 +331,7 @@ export default function Solo() {
 
         setScore(finalScore);
         scoreSubmitted.current = true;
-        sauvegarderScore(finalScore);
+        void sauvegarderScore(submittedOperations);
     };
 
     const selectedValue =
@@ -245,17 +339,41 @@ export default function Solo() {
             ? numbers.find((n) => n.id === selectedId)?.value
             : null;
 
-    const bestCurrentDifference = numbers
-        .filter((n) => !n.used)
-        .reduce(
-            (best, n) => Math.min(best, Math.abs(n.value - game.target)),
-            Infinity
+    const currentPotentialScore = useMemo(() => {
+        const remainingNumbers = numbers
+            .filter((n) => !n.used)
+            .map((n) => n.value);
+        const reachableValues = computeReachableMap(remainingNumbers);
+        const bestReachableDifference = Array.from(reachableValues.keys())
+            .reduce(
+                (best, value) => Math.min(best, Math.abs(value - game.target)),
+                Infinity
+            );
+
+        return applyHintPenalty(
+            computeScore(bestReachableDifference),
+            hintsRevealed,
+            game.solution.length
         );
-    const currentPotentialScore = applyHintPenalty(
-        computeScore(bestCurrentDifference),
-        hintsRevealed,
-        game.solution.length
+    }, [game.solution.length, game.target, hintsRevealed, numbers]
     );
+    const potentialScoreColor = currentPotentialScore === 0
+        ? "#FBBF24"
+        : currentPotentialScore <= 3
+            ? "#FB923C"
+            : currentPotentialScore <= 6
+                ? "#FDE047"
+                : "#86EFAC";
+
+    if (isStartingGame) {
+        return (
+            <SafeAreaView style={styles.container} edges={["top"]}>
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <ActivityIndicator size="large" color="#FBBF24" />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -305,16 +423,24 @@ export default function Solo() {
                         <Text style={styles.subtitle}>
                             {scoreSaveStatus === "saving"
                                 ? "Enregistrement au classement..."
+                                : scoreSaveStatus === "queued"
+                                    ? "Score en attente de connexion"
+                                    : scoreSaveStatus === "unranked"
+                                        ? "Score non classé : défi serveur indisponible"
+                                        : scoreSaveStatus === "rejected"
+                                            ? "Score refusé : solution ou défi invalide"
                                 : scoreSaveStatus === "saved"
                                     ? "Score ajouté au classement"
                                     : scoreSaveStatus === "error"
                                         ? "Score non enregistré au classement"
                                         : ""}
                         </Text>
-                        {scoreSaveStatus === "error" && score !== null && (
-                            <Pressable onPress={() => sauvegarderScore(score)}>
+                        {(scoreSaveStatus === "error" || scoreSaveStatus === "queued") && score !== null && (
+                            <Pressable onPress={() => void sauvegarderScore(operations)}>
                                 <Text style={styles.solutionButtonText}>
-                                    Réessayer l’enregistrement
+                                    {scoreSaveStatus === "queued"
+                                        ? "Réessayer la synchronisation"
+                                        : "Réessayer l’enregistrement"}
                                 </Text>
                             </Pressable>
                         )}
@@ -392,7 +518,7 @@ export default function Solo() {
                 )}
 
                 {!validated && (
-                    <Text style={styles.subtitle}>
+                    <Text style={[styles.subtitle, { color: potentialScoreColor }]}>
                         Points encore possibles : {currentPotentialScore}
                     </Text>
                 )}
@@ -464,14 +590,18 @@ export default function Solo() {
                 onRequestClose={() => setSolutionVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>
-                            {hintsRevealed >= game.solution.length
-                                ? "Solution complète"
-                                : "Indice"}
-                        </Text>
+                    <ScrollView
+                        style={styles.solutionModalScroll}
+                        contentContainerStyle={styles.solutionModalContent}
+                        showsVerticalScrollIndicator
+                    >
+                        <View style={styles.modalCard}>
+                            <Text style={styles.modalTitle}>
+                                {hintsRevealed >= game.solution.length
+                                    ? "Solution complète"
+                                    : "Indice"}
+                            </Text>
 
-                        <ScrollView style={styles.solutionScroll}>
                             {game.solution
                                 .slice(0, hintsRevealed)
                                 .map((ligne, index) => (
@@ -488,28 +618,29 @@ export default function Solo() {
                                     Résultat : {game.target}
                                 </Text>
                             )}
-                        </ScrollView>
 
-                        <View style={styles.modalActions}>
-                            <Pressable
-                                onPress={() => setSolutionVisible(false)}
-                                style={[styles.modalButton, styles.modalCancel]}
-                            >
-                                <Text style={styles.modalCancelText}>Fermer</Text>
-                            </Pressable>
-
-                            {hintsRevealed < game.solution.length && (
+                            <View style={styles.modalActions}>
                                 <Pressable
-                                    onPress={indiceSuivant}
-                                    style={[styles.modalButton, styles.modalConfirm]}
+                                    onPress={() => setSolutionVisible(false)}
+                                    style={[styles.modalButton, styles.modalCancel]}
                                 >
-                                    <Text style={styles.modalConfirmText}>
-                                        Indice suivant
-                                    </Text>
+                                    <Text style={styles.modalCancelText}>Fermer</Text>
                                 </Pressable>
-                            )}
+
+                                {hintsRevealed < game.solution.length && (
+                                    <Pressable
+                                        onPress={indiceSuivant}
+                                        disabled={isRevealingHint}
+                                        style={[styles.modalButton, styles.modalConfirm]}
+                                    >
+                                        <Text style={styles.modalConfirmText}>
+                                            Indice suivant
+                                        </Text>
+                                    </Pressable>
+                                )}
+                            </View>
                         </View>
-                    </View>
+                    </ScrollView>
                 </View>
             </Modal>
         </SafeAreaView>

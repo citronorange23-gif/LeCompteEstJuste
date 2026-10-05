@@ -3,6 +3,7 @@ export type MatchFoundPayload = {
     opponent: { id: string; pseudo: string };
     numbers: number[];
     target: number;
+    solution: string[];
     timeLimitMs: number;
     startAt: number;
 };

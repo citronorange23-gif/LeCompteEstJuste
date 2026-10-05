@@ -1,11 +1,16 @@
 import { Server, Socket } from "socket.io";
 import { Matchmaking } from "./matchmaking";
 import { GameSessionManager } from "./session";
-import { recordSoloScore, registerOrGetPlayer } from "./player";
+import { registerOrGetPlayer } from "./player";
 import { getTopPlayers } from "./leaderboard";
 import { validatePseudo } from "./validation";
 import { isRateLimited } from "./rateLimiter";
 import { createGameInvite, getAndValidateInvite } from "./invite"; // <-- Importe tes fonctions d'invitation
+import {
+    createSoloChallenge,
+    revealSoloHint,
+    submitSoloChallenge,
+} from "./soloChallenge";
 import {
     ClientToServerEvents,
     ServerToClientEvents,
@@ -216,36 +221,126 @@ export const setupSocketServer = (
             //     sessions.createMatch(hostPlayer, player);
             // });
 
-            socket.on("solo:score", async ({ points }) => {
+            socket.on("solo:challenge:start", async () => {
                 const player = socketToPlayer.get(socket.id);
                 if (!player) {
-                    socket.emit("solo:score-error", {
-                        message: "Enregistre-toi avant de sauvegarder ton score.",
+                    socket.emit("solo:error", {
+                        code: "not_registered",
+                        message: "Enregistre-toi avant de jouer.",
+                        retryable: true,
                     });
                     return;
                 }
 
-                if (isRateLimited(`solo-score:${socket.id}`, 20, 60_000)) {
-                    socket.emit("solo:score-error", {
-                        message: "Trop de scores envoyés, réessaie plus tard.",
-                    });
-                    return;
-                }
-
-                if (!Number.isInteger(points) || points < 0 || points > 10) {
-                    socket.emit("solo:score-error", {
-                        message: "Le score envoyé est invalide.",
+                if (isRateLimited(`solo-start:${player.id}`, 10, 60_000)) {
+                    socket.emit("solo:error", {
+                        code: "rate_limited",
+                        message: "Trop de parties lancées, réessaie plus tard.",
+                        retryable: true,
                     });
                     return;
                 }
 
                 try {
-                    await recordSoloScore(player.id, points);
-                    socket.emit("solo:score-recorded", { points });
+                    const challenge = await createSoloChallenge(player.id);
+                    socket.emit("solo:challenge", challenge);
                 } catch (err) {
-                    console.error("Erreur sauvegarde score solo:", err);
-                    socket.emit("solo:score-error", {
-                        message: "Impossible de sauvegarder le score.",
+                    console.error("Erreur création défi solo:", err);
+                    socket.emit("solo:error", {
+                        code: "challenge_start_failed",
+                        message: "Impossible de démarrer une partie classée.",
+                        retryable: true,
+                    });
+                }
+            });
+
+            socket.on("solo:hint", async ({ challengeId }) => {
+                const player = socketToPlayer.get(socket.id);
+                if (!player) {
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code: "not_registered",
+                        message: "Enregistre-toi avant de demander un indice.",
+                        retryable: true,
+                    });
+                    return;
+                }
+
+                if (isRateLimited(`solo-hint:${player.id}`, 30, 60_000)) {
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code: "rate_limited",
+                        message: "Trop d’indices demandés.",
+                        retryable: true,
+                    });
+                    return;
+                }
+
+                try {
+                    const hint = await revealSoloHint(challengeId, player.id);
+                    socket.emit("solo:hint-revealed", { challengeId, ...hint });
+                } catch (err) {
+                    console.error("Erreur révélation indice solo:", err);
+                    const code = err instanceof Error ? err.message : "hint_failed";
+                    const retryable = ![
+                        "challenge_unavailable",
+                        "no_hints_remaining",
+                        "hint_already_revealed",
+                    ].includes(code);
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code,
+                        message: "Impossible de valider cet indice.",
+                        retryable,
+                    });
+                }
+            });
+
+            socket.on("solo:submit", async ({ challengeId, operations, hintsUsed }) => {
+                const player = socketToPlayer.get(socket.id);
+                if (!player) {
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code: "not_registered",
+                        message: "Enregistre-toi avant de sauvegarder ton score.",
+                        retryable: true,
+                    });
+                    return;
+                }
+
+                if (isRateLimited(`solo-submit:${player.id}`, 20, 60_000)) {
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code: "rate_limited",
+                        message: "Trop de scores envoyés, réessaie plus tard.",
+                        retryable: true,
+                    });
+                    return;
+                }
+
+                try {
+                    const points = await submitSoloChallenge(
+                        challengeId,
+                        player.id,
+                        operations,
+                        hintsUsed
+                    );
+                    socket.emit("solo:score-recorded", { challengeId, points });
+                } catch (err) {
+                    console.error("Erreur validation score solo:", err);
+                    const code = err instanceof Error ? err.message : "submit_failed";
+                    const retryable = ![
+                        "challenge_not_found",
+                        "challenge_expired",
+                        "invalid_hint_count",
+                        "invalid_solution",
+                        "challenge_unavailable",
+                    ].includes(code);
+                    socket.emit("solo:error", {
+                        challengeId,
+                        code,
+                        message: "La solution ou le défi n’est pas valide.",
+                        retryable,
                     });
                 }
             });

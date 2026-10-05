@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { hasCompletedPseudoSetup } from "../lib/pseudo";
+import { watchPendingSoloScores } from "../lib/player";
 
 export default function RootLayout() {
     const router = useRouter();
@@ -18,6 +19,11 @@ export default function RootLayout() {
         if (ready && needsPseudo) {
             router.replace("/pseudo" as any);
         }
+    }, [ready, needsPseudo]);
+
+    useEffect(() => {
+        if (!ready || needsPseudo) return;
+        return watchPendingSoloScores();
     }, [ready, needsPseudo]);
 
     if (!ready) return null;

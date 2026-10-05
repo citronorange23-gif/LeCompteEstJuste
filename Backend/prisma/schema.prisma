@@ -17,6 +17,7 @@ model Player {
   createdAt DateTime @default(now())
 
   sentInvites GameInvite[]
+  soloChallenges SoloChallenge[]
 }
 
 model GameInvite {
@@ -35,6 +36,24 @@ model GameInvite {
   @@index([playerId])
   @@index([matchId])
   @@index([expiresAt])
+}
+
+model SoloChallenge {
+  id String @id
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  numbers       Int[]
+  target        Int
+  solution      String[]
+  hintsUsed     Int       @default(0)
+  pointsAwarded Int?
+  expiresAt     DateTime
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([playerId, expiresAt])
 }
 
 enum InviteStatus {
