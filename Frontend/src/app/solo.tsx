@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ScrollView,
     View,
@@ -15,7 +15,6 @@ import {
     genererPartie,
     computeResult,
     computeScore,
-    computeReachableMap,
     applyHintPenalty,
     type Game,
 } from "@lcb/shared/algorithm";
@@ -356,23 +355,10 @@ export default function Solo() {
             ? numbers.find((n) => n.id === selectedId)?.value
             : null;
 
-    const currentPotentialScore = useMemo(() => {
-        const remainingNumbers = numbers
-            .filter((n) => !n.used)
-            .map((n) => n.value);
-        const reachableValues = computeReachableMap(remainingNumbers);
-        const bestReachableDifference = Array.from(reachableValues.keys())
-            .reduce(
-                (best, value) => Math.min(best, Math.abs(value - game.target)),
-                Infinity
-            );
-
-        return applyHintPenalty(
-            computeScore(bestReachableDifference),
-            hintsRevealed,
-            totalHints
-        );
-    }, [game.target, hintsRevealed, numbers, totalHints]
+    const currentPotentialScore = applyHintPenalty(
+        10,
+        hintsRevealed,
+        totalHints
     );
     const potentialScoreColor = currentPotentialScore === 0
         ? "#FBBF24"

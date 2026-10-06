@@ -65,7 +65,7 @@ test("applies the proportional hint penalty, including zero after all hints", ()
 
     assert.deepEqual(scores, [10, 7, 5, 2, 0]);
     assert.equal(scores.every(Number.isInteger), true);
-    assert.equal(scores.every((score, index) => index === 0 || score <= scores[index - 1]), true);
+    assert.equal(scores.every((score, index) => index === 0 || score < scores[index - 1]), true);
 });
 
 test("hashes valid device credentials and rejects a different credential", () => {
