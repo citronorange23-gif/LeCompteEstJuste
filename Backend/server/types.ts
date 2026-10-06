@@ -90,11 +90,7 @@ export interface ClientToServerEvents {
 
     "solo:challenge:start": () => void;
     "solo:hint": (payload: { challengeId: string; hintIndex: number }) => void;
-    "solo:submit": (payload: {
-        challengeId: string;
-        operations: SoloOperation[];
-        hintsUsed: number;
-    }) => void;
+    "solo:submit": (payload: { scoreId: string; points: number }) => void;
 
     // ClientToServerEvents
     "invite:create": () => void;
@@ -144,22 +140,9 @@ export interface ServerToClientEvents {
         players: LeaderboardEntry[];
     }) => void;
 
-    "solo:challenge": (payload: {
-        challengeId: string;
-        numbers: number[];
-        target: number;
-        totalHints: number;
-        expiresAt: number;
-    }) => void;
-    "solo:hint-revealed": (payload: {
-        challengeId: string;
-        hintIndex: number;
-        hintsUsed: number;
-        hint: string;
-    }) => void;
-    "solo:score-recorded": (payload: { challengeId: string; points: number }) => void;
+    "solo:score-recorded": (payload: { scoreId: string; points: number }) => void;
     "solo:error": (payload: {
-        challengeId?: string;
+        scoreId?: string;
         code: string;
         message: string;
         retryable: boolean;

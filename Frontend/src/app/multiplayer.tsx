@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { styles } from "../styles/styles";
 import { mpStyles } from "../styles/multiplayerStyles";
 import { useMultiplayerMatch } from "../hooks/useMultiplayerMatch";
-import { computeResult } from "@lcb/shared/algorithm";
+import { computeResult } from "../lib/algorithm";
 
 type NumEntry = {
     id: number;

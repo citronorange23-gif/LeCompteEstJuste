@@ -22,17 +22,8 @@ export type SoloOperation = {
 };
 
 type PendingSoloScore = {
-    challengeId: string;
-    operations: SoloOperation[];
-    hintsUsed: number;
-};
-
-export type ServerSoloChallenge = {
-    challengeId: string;
-    numbers: number[];
-    target: number;
-    totalHints: number;
-    expiresAt: number;
+    scoreId: string;
+    points: number;
 };
 
 export const isDeviceCredentialError = (
@@ -42,7 +33,7 @@ export const isDeviceCredentialError = (
     "code" in error &&
     (error as Error & { code: string }).code.startsWith("device_credential_");
 
-function generateUUID(): string {
+export function generateUUID(): string {
     if (
         typeof crypto !== "undefined" &&
         typeof crypto.randomUUID === "function"
@@ -250,12 +241,12 @@ const sendPendingSoloScore = async (
         resolve(outcome);
     };
 
-    const onRecorded = ({ challengeId }: { challengeId: string }) => {
-        if (challengeId === pending.challengeId) finish("saved");
+    const onRecorded = ({ scoreId }: { scoreId: string }) => {
+        if (scoreId === pending.scoreId) finish("saved");
     };
 
-    const onError = (payload: { challengeId?: string; retryable: boolean }) => {
-        if (payload.challengeId === pending.challengeId) {
+    const onError = (payload: { scoreId?: string; retryable: boolean }) => {
+        if (payload.scoreId === pending.scoreId) {
             finish(payload.retryable ? "retry" : "rejected");
         }
     };
@@ -266,38 +257,38 @@ const sendPendingSoloScore = async (
 });
 
 export const syncPendingSoloScores = async (
-    requestedChallengeId?: string
+    requestedScoreId?: string
 ): Promise<"saved" | "queued" | "rejected" | void> => {
-    if (pendingSyncInProgress) return requestedChallengeId ? "queued" : undefined;
+    if (pendingSyncInProgress) return requestedScoreId ? "queued" : undefined;
     pendingSyncInProgress = true;
 
     try {
         const pending = await readPendingSoloScores();
-        if (pending.length === 0) return requestedChallengeId ? "saved" : undefined;
+        if (pending.length === 0) return requestedScoreId ? "saved" : undefined;
 
         const socket = await ensurePlayerSocketRegistered();
         let requestedOutcome: "saved" | "queued" | "rejected" | undefined;
         for (const score of pending) {
             const outcome = await sendPendingSoloScore(socket, score);
             if (outcome === "retry") {
-                if (score.challengeId === requestedChallengeId) requestedOutcome = "queued";
+                if (score.scoreId === requestedScoreId) requestedOutcome = "queued";
                 break;
             }
 
             const remaining = (await readPendingSoloScores()).filter(
-                (entry) => entry.challengeId !== score.challengeId
+                (entry) => entry.scoreId !== score.scoreId
             );
             await writePendingSoloScores(remaining);
 
-            if (score.challengeId === requestedChallengeId) {
+            if (score.scoreId === requestedScoreId) {
                 requestedOutcome = outcome;
             }
         }
 
-        return requestedOutcome ?? (requestedChallengeId ? "queued" : undefined);
+        return requestedOutcome ?? (requestedScoreId ? "queued" : undefined);
     } catch {
         // Keep queued results locally until a later connection succeeds.
-        return requestedChallengeId ? "queued" : undefined;
+        return requestedScoreId ? "queued" : undefined;
     } finally {
         pendingSyncInProgress = false;
     }
@@ -305,7 +296,9 @@ export const syncPendingSoloScores = async (
 
 export const watchPendingSoloScores = () => {
     const socket = getSocket();
-    const onConnect = () => void syncPendingSoloScores();
+    const onConnect = () => {
+        void syncPendingSoloScores();
+    };
 
     socket.on("connect", onConnect);
     void syncPendingSoloScores();
@@ -315,91 +308,15 @@ export const watchPendingSoloScores = () => {
     };
 };
 
-export const startSoloChallenge = async (): Promise<ServerSoloChallenge | null> => {
-    try {
-        const socket = await ensurePlayerSocketRegistered();
-        void syncPendingSoloScores();
-
-        return await new Promise((resolve) => {
-            let settled = false;
-            const timeout = setTimeout(() => finish(null), 10_000);
-
-            const cleanup = () => {
-                clearTimeout(timeout);
-                socket.off("solo:challenge", onChallenge);
-                socket.off("solo:error", onError);
-            };
-
-            const finish = (challenge: ServerSoloChallenge | null) => {
-                if (settled) return;
-                settled = true;
-                cleanup();
-                resolve(challenge);
-            };
-
-            const onChallenge = (challenge: ServerSoloChallenge) => finish(challenge);
-            const onError = (payload: { challengeId?: string }) => {
-                if (!payload.challengeId) finish(null);
-            };
-
-            socket.on("solo:challenge", onChallenge);
-            socket.on("solo:error", onError);
-            socket.emit("solo:challenge:start");
-        });
-    } catch (error) {
-        if (isDeviceCredentialError(error)) throw error;
-        return null;
-    }
-};
-
-export const recordSoloHint = async (
-    challengeId: string,
-    hintIndex: number
-): Promise<string | null> => {
-    const socket = getSocket();
-    if (!socket.connected || registeredSocketId !== socket.id) return null;
-
-    return new Promise((resolve) => {
-        let settled = false;
-        const timeout = setTimeout(() => finish(null), 5_000);
-
-        const cleanup = () => {
-            clearTimeout(timeout);
-            socket.off("solo:hint-revealed", onRevealed);
-            socket.off("solo:error", onError);
-        };
-
-        const finish = (hint: string | null) => {
-            if (settled) return;
-            settled = true;
-            cleanup();
-            resolve(hint);
-        };
-
-        const onRevealed = (payload: { challengeId: string; hintIndex: number; hint: string }) => {
-            if (payload.challengeId === challengeId && payload.hintIndex === hintIndex) {
-                finish(payload.hint);
-            }
-        };
-
-        const onError = (payload: { challengeId?: string }) => {
-            if (payload.challengeId === challengeId) finish(null);
-        };
-
-        socket.on("solo:hint-revealed", onRevealed);
-        socket.on("solo:error", onError);
-        socket.emit("solo:hint", { challengeId, hintIndex });
-    });
-};
-
-export const submitSoloOperations = async (
-    result: PendingSoloScore
+export const submitSoloScore = async (
+    scoreId: string,
+    points: number
 ): Promise<"saved" | "queued" | "rejected"> => {
     const pending = await readPendingSoloScores();
-    if (!pending.some((entry) => entry.challengeId === result.challengeId)) {
-        pending.push(result);
+    if (!pending.some((entry) => entry.scoreId === scoreId)) {
+        pending.push({ scoreId, points });
         await writePendingSoloScores(pending);
     }
 
-    return (await syncPendingSoloScores(result.challengeId)) ?? "queued";
+    return (await syncPendingSoloScores(scoreId)) ?? "queued";
 };
