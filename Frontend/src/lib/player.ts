@@ -1,8 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Crypto from "expo-crypto";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { getSavedPseudo } from "./pseudo";
 import { getSocket } from "./socket";
 
 const PLAYER_ID_KEY = "lcb_player_id";
+const DEVICE_CREDENTIAL_KEY = "lcb_device_credential";
 const PENDING_SOLO_SCORES_KEY = "lcb_pending_solo_scores";
 let registeredSocketId: string | null = null;
 let disconnectListenerAttached = false;
@@ -26,9 +30,16 @@ export type ServerSoloChallenge = {
     challengeId: string;
     numbers: number[];
     target: number;
-    solution: string[];
+    totalHints: number;
     expiresAt: number;
 };
+
+export const isDeviceCredentialError = (
+    error: unknown
+): error is Error & { code: string } =>
+    error instanceof Error &&
+    "code" in error &&
+    (error as Error & { code: string }).code.startsWith("device_credential_");
 
 function generateUUID(): string {
     if (
@@ -50,24 +61,61 @@ function generateUUID(): string {
 }
 
 export const getOrCreatePlayerId = async (): Promise<string> => {
-    const existing = await AsyncStorage.getItem(PLAYER_ID_KEY);
+    const isWeb = Platform.OS === "web";
+    const read = isWeb
+        ? () => AsyncStorage.getItem(PLAYER_ID_KEY)
+        : () => SecureStore.getItemAsync(PLAYER_ID_KEY);
+    const write = isWeb
+        ? (id: string) => AsyncStorage.setItem(PLAYER_ID_KEY, id)
+        : (id: string) => SecureStore.setItemAsync(PLAYER_ID_KEY, id);
+
+    const existing = await read();
 
     if (existing) {
         return existing;
     }
 
+    if (!isWeb) {
+        const legacyId = await AsyncStorage.getItem(PLAYER_ID_KEY);
+        if (legacyId) {
+            await write(legacyId);
+            await AsyncStorage.removeItem(PLAYER_ID_KEY);
+            return legacyId;
+        }
+    }
+
     const id = generateUUID();
 
-    await AsyncStorage.setItem(PLAYER_ID_KEY, id);
+    await write(id);
 
     return id;
 };
 
+const getOrCreateDeviceCredential = async (): Promise<string> => {
+    const read = Platform.OS === "web"
+        ? () => AsyncStorage.getItem(DEVICE_CREDENTIAL_KEY)
+        : () => SecureStore.getItemAsync(DEVICE_CREDENTIAL_KEY);
+    const write = Platform.OS === "web"
+        ? (credential: string) => AsyncStorage.setItem(DEVICE_CREDENTIAL_KEY, credential)
+        : (credential: string) => SecureStore.setItemAsync(DEVICE_CREDENTIAL_KEY, credential);
+
+    const existing = await read();
+    if (existing && /^[a-f0-9]{64}$/i.test(existing)) return existing;
+
+    const bytes = await Crypto.getRandomBytesAsync(32);
+    const credential = Array.from(bytes)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+    await write(credential);
+    return credential;
+};
+
 const connectAndRegisterSocket = async () => {
     const socket = getSocket();
-    const [id, pseudo] = await Promise.all([
+    const [id, pseudo, deviceCredential] = await Promise.all([
         getOrCreatePlayerId(),
         getSavedPseudo(),
+        getOrCreateDeviceCredential(),
     ]);
 
     if (!pseudo) {
@@ -129,21 +177,21 @@ const connectAndRegisterSocket = async () => {
                 resolve();
             };
 
-            const onError = ({ message }: { message: string }) => {
+            const onError = ({ code, message }: { code: string; message: string }) => {
                 cleanup();
-                reject(new Error(message));
+                reject(Object.assign(new Error(message), { code }));
             };
 
             socket.once("player:registered", onRegistered);
             socket.once("player:error", onError);
-            socket.emit("player:register", { id, pseudo });
+            socket.emit("player:register", { id, pseudo, deviceCredential });
         });
     }
 
     return socket;
 };
 
-const ensureSocketRegistered = async () => {
+export const ensurePlayerSocketRegistered = async () => {
     if (!registrationInProgress) {
         registrationInProgress = connectAndRegisterSocket();
     }
@@ -222,7 +270,7 @@ export const syncPendingSoloScores = async (
         const pending = await readPendingSoloScores();
         if (pending.length === 0) return requestedChallengeId ? "saved" : undefined;
 
-        const socket = await ensureSocketRegistered();
+        const socket = await ensurePlayerSocketRegistered();
         let requestedOutcome: "saved" | "queued" | "rejected" | undefined;
         for (const score of pending) {
             const outcome = await sendPendingSoloScore(socket, score);
@@ -264,7 +312,7 @@ export const watchPendingSoloScores = () => {
 
 export const startSoloChallenge = async (): Promise<ServerSoloChallenge | null> => {
     try {
-        const socket = await ensureSocketRegistered();
+        const socket = await ensurePlayerSocketRegistered();
         void syncPendingSoloScores();
 
         return await new Promise((resolve) => {
@@ -293,18 +341,22 @@ export const startSoloChallenge = async (): Promise<ServerSoloChallenge | null> 
             socket.on("solo:error", onError);
             socket.emit("solo:challenge:start");
         });
-    } catch {
+    } catch (error) {
+        if (isDeviceCredentialError(error)) throw error;
         return null;
     }
 };
 
-export const recordSoloHint = async (challengeId: string): Promise<boolean> => {
+export const recordSoloHint = async (
+    challengeId: string,
+    hintIndex: number
+): Promise<string | null> => {
     const socket = getSocket();
-    if (!socket.connected || registeredSocketId !== socket.id) return false;
+    if (!socket.connected || registeredSocketId !== socket.id) return null;
 
     return new Promise((resolve) => {
         let settled = false;
-        const timeout = setTimeout(() => finish(false), 5_000);
+        const timeout = setTimeout(() => finish(null), 5_000);
 
         const cleanup = () => {
             clearTimeout(timeout);
@@ -312,24 +364,26 @@ export const recordSoloHint = async (challengeId: string): Promise<boolean> => {
             socket.off("solo:error", onError);
         };
 
-        const finish = (recorded: boolean) => {
+        const finish = (hint: string | null) => {
             if (settled) return;
             settled = true;
             cleanup();
-            resolve(recorded);
+            resolve(hint);
         };
 
-        const onRevealed = (payload: { challengeId: string }) => {
-            if (payload.challengeId === challengeId) finish(true);
+        const onRevealed = (payload: { challengeId: string; hintIndex: number; hint: string }) => {
+            if (payload.challengeId === challengeId && payload.hintIndex === hintIndex) {
+                finish(payload.hint);
+            }
         };
 
         const onError = (payload: { challengeId?: string }) => {
-            if (payload.challengeId === challengeId) finish(false);
+            if (payload.challengeId === challengeId) finish(null);
         };
 
         socket.on("solo:hint-revealed", onRevealed);
         socket.on("solo:error", onError);
-        socket.emit("solo:hint", { challengeId });
+        socket.emit("solo:hint", { challengeId, hintIndex });
     });
 };
 

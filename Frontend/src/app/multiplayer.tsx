@@ -33,6 +33,7 @@ export default function Multiplayer() {
 
     const {
         phase,
+        pseudoError,
         match,
         result,
         opponentAnswered,
@@ -354,6 +355,27 @@ export default function Multiplayer() {
                         size="large"
                         color="#6366F1"
                     />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (phase === "identityError") {
+        return (
+            <SafeAreaView style={styles.container} edges={["top"]}>
+                <View style={mpStyles.centered}>
+                    <Text style={mpStyles.errorText}>
+                        {pseudoError ?? "Ce profil est lié à un autre appareil."}
+                    </Text>
+                    <Pressable
+                        onPress={() => {
+                            quitter();
+                            router.back();
+                        }}
+                        style={mpStyles.secondaryButton}
+                    >
+                        <Text style={mpStyles.secondaryButtonText}>Retour</Text>
+                    </Pressable>
                 </View>
             </SafeAreaView>
         );
@@ -886,12 +908,12 @@ export default function Multiplayer() {
                         </Text>
                     )}
 
-                    {match?.solution && match.solution.length > 0 && (
+                    {result.solution.length > 0 && (
                         <View style={mpStyles.matchSolution}>
                             <Text style={mpStyles.matchSolutionTitle}>
                                 Solution
                             </Text>
-                            {match.solution.map((step, index) => (
+                            {result.solution.map((step, index) => (
                                 <Text
                                     key={`${index}-${step}`}
                                     style={mpStyles.matchSolutionStep}

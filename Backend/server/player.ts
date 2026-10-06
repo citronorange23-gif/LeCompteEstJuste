@@ -1,4 +1,8 @@
 import { prisma } from "./db";
+import {
+    hashDeviceCredential,
+    matchesDeviceCredential,
+} from "./deviceCredential";
 
 const isUniqueConstraintError = (
     err: unknown
@@ -13,22 +17,46 @@ const isUniqueConstraintError = (
 
 export const registerOrGetPlayer = async (
     id: string,
-    pseudo: string
+    pseudo: string,
+    deviceCredential: string
 ) => {
+    const deviceCredentialHash = hashDeviceCredential(deviceCredential);
     const existing = await prisma.player.findUnique({
         where: { id },
     });
 
     if (existing) {
-        return existing;
+        if (existing.deviceCredentialHash) {
+            if (!matchesDeviceCredential(deviceCredential, existing.deviceCredentialHash)) {
+                throw new Error("device_credential_invalid");
+            }
+            return existing;
+        }
+
+        await prisma.player.updateMany({
+            where: { id, deviceCredentialHash: null },
+            data: { deviceCredentialHash },
+        });
+
+        const claimed = await prisma.player.findUnique({ where: { id } });
+        if (!claimed || claimed.deviceCredentialHash !== deviceCredentialHash) {
+            throw new Error("device_credential_invalid");
+        }
+        return claimed;
     }
 
     try {
         return await prisma.player.create({
-            data: { id, pseudo },
+            data: { id, pseudo, deviceCredentialHash },
         });
     } catch (err) {
         if (isUniqueConstraintError(err)) {
+            const credentialOwner = await prisma.player.findUnique({
+                where: { deviceCredentialHash },
+            });
+            if (credentialOwner && credentialOwner.id !== id) {
+                throw new Error("device_credential_in_use");
+            }
             throw new Error("pseudo_taken");
         }
         throw err;

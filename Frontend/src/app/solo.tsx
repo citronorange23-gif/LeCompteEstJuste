@@ -25,6 +25,7 @@ import {
     startSoloChallenge,
     submitSoloOperations,
     syncPendingSoloScores,
+    isDeviceCredentialError,
     type SoloOperation,
 } from "../lib/player";
 import { getSocket } from "../lib/socket";
@@ -58,6 +59,10 @@ export default function Solo() {
     const [challengeId, setChallengeId] = useState<string | null>(null);
     const challengeIdRef = useRef<string | null>(null);
     const [rankedEligible, setRankedEligible] = useState(false);
+    const [identityError, setIdentityError] = useState<string | null>(null);
+    const [totalHints, setTotalHints] = useState(game.solution.length);
+    const [revealedHints, setRevealedHints] = useState<string[]>([]);
+    const [hintRequestError, setHintRequestError] = useState<string | null>(null);
 
     const [numbers, setNumbers] = useState<NumEntry[]>(() =>
         game.numbers.map((value, index) => ({ id: index, value, used: false }))
@@ -95,16 +100,26 @@ export default function Solo() {
         setChallengeId(null);
         challengeIdRef.current = null;
 
-        const serverChallenge = await startSoloChallenge();
+        let serverChallenge;
+        try {
+            serverChallenge = await startSoloChallenge();
+            setIdentityError(null);
+        } catch (error) {
+            if (!isDeviceCredentialError(error)) throw error;
+            setIdentityError(error.message);
+            setIsStartingGame(false);
+            return;
+        }
         const nouvelleGame: Game = serverChallenge
             ? {
                   numbers: serverChallenge.numbers,
                   target: serverChallenge.target,
-                  solution: serverChallenge.solution,
+                  solution: [],
               }
             : genererPartie();
 
         setGame(nouvelleGame);
+        setTotalHints(serverChallenge?.totalHints ?? nouvelleGame.solution.length);
         setChallengeId(serverChallenge?.challengeId ?? null);
         challengeIdRef.current = serverChallenge?.challengeId ?? null;
         setRankedEligible(serverChallenge !== null);
@@ -124,6 +139,8 @@ export default function Solo() {
         setValidated(false);
         setScore(null);
         setHintsRevealed(0);
+        setRevealedHints([]);
+        setHintRequestError(null);
         setIsRevealingHint(false);
         setScoreSaveStatus("idle");
         scoreSubmitted.current = false;
@@ -175,14 +192,25 @@ export default function Solo() {
     };
 
     const revelerIndiceSuivant = async () => {
-        if (validated || isRevealingHint || hintsRevealed >= game.solution.length) return;
+        if (validated || isRevealingHint || hintsRevealed >= totalHints) return;
 
         setIsRevealingHint(true);
+        let revealedHint: string | undefined;
         if (challengeId && rankedEligible) {
-            const recorded = await recordSoloHint(challengeId);
-            if (!recorded) setRankedEligible(false);
+            revealedHint = (await recordSoloHint(challengeId, hintsRevealed)) ?? undefined;
+        } else {
+            revealedHint = game.solution[hintsRevealed];
         }
-        setHintsRevealed((previous) => Math.min(previous + 1, game.solution.length));
+
+        if (!revealedHint) {
+            setHintRequestError("Reconnecte-toi au serveur pour recevoir cet indice.");
+            setIsRevealingHint(false);
+            return;
+        }
+
+        setRevealedHints((previous) => [...previous, revealedHint]);
+        setHintsRevealed((previous) => Math.min(previous + 1, totalHints));
+        setHintRequestError(null);
         setIsRevealingHint(false);
     };
 
@@ -326,7 +354,7 @@ export default function Solo() {
         const finalScore = applyHintPenalty(
             baseScore,
             hintsRevealed,
-            game.solution.length
+            totalHints
         );
 
         setScore(finalScore);
@@ -353,9 +381,9 @@ export default function Solo() {
         return applyHintPenalty(
             computeScore(bestReachableDifference),
             hintsRevealed,
-            game.solution.length
+            totalHints
         );
-    }, [game.solution.length, game.target, hintsRevealed, numbers]
+    }, [game.target, hintsRevealed, numbers, totalHints]
     );
     const potentialScoreColor = currentPotentialScore === 0
         ? "#FBBF24"
@@ -370,6 +398,22 @@ export default function Solo() {
             <SafeAreaView style={styles.container} edges={["top"]}>
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
                     <ActivityIndicator size="large" color="#FBBF24" />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (identityError) {
+        return (
+            <SafeAreaView style={styles.container} edges={["top"]}>
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}>
+                    <Text style={styles.subtitle}>{identityError}</Text>
+                    <Pressable
+                        onPress={() => void nouvellePartie()}
+                        style={styles.newGameButton}
+                    >
+                        <Text style={styles.newGameText}>Réessayer</Text>
+                    </Pressable>
                 </View>
             </SafeAreaView>
         );
@@ -537,7 +581,7 @@ export default function Solo() {
                     <Text style={styles.solutionButtonText}>
                         {hintsRevealed === 0
                             ? "Voir un indice"
-                            : hintsRevealed >= game.solution.length
+                            : hintsRevealed >= totalHints
                             ? "Voir les indices"
                             : "Voir mes indices"}
                     </Text>
@@ -597,14 +641,12 @@ export default function Solo() {
                     >
                         <View style={styles.modalCard}>
                             <Text style={styles.modalTitle}>
-                                {hintsRevealed >= game.solution.length
+                                {hintsRevealed >= totalHints
                                     ? "Solution complète"
                                     : "Indice"}
                             </Text>
 
-                            {game.solution
-                                .slice(0, hintsRevealed)
-                                .map((ligne, index) => (
+                            {revealedHints.map((ligne, index) => (
                                     <Text key={index} style={styles.solutionLine}>
                                         <Text style={styles.solutionIndiceLabel}>
                                             Indice {index + 1} :{" "}
@@ -613,7 +655,13 @@ export default function Solo() {
                                     </Text>
                                 ))}
 
-                            {hintsRevealed >= game.solution.length && (
+                            {hintRequestError && (
+                                <Text style={styles.modalText}>
+                                    {hintRequestError}
+                                </Text>
+                            )}
+
+                            {hintsRevealed >= totalHints && (
                                 <Text style={styles.solutionFinal}>
                                     Résultat : {game.target}
                                 </Text>
@@ -627,7 +675,7 @@ export default function Solo() {
                                     <Text style={styles.modalCancelText}>Fermer</Text>
                                 </Pressable>
 
-                                {hintsRevealed < game.solution.length && (
+                                {hintsRevealed < totalHints && (
                                     <Pressable
                                         onPress={indiceSuivant}
                                         disabled={isRevealingHint}

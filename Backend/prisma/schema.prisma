@@ -15,6 +15,7 @@ model Player {
   draws     Int      @default(0)
   points    Int      @default(0)
   createdAt DateTime @default(now())
+  deviceCredentialHash String? @unique
 
   sentInvites GameInvite[]
   soloChallenges SoloChallenge[]

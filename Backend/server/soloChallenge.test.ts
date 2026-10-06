@@ -4,6 +4,10 @@ import {
     calculateSoloPoints,
     validateSoloOperations,
 } from "./soloChallenge";
+import {
+    hashDeviceCredential,
+    matchesDeviceCredential,
+} from "./deviceCredential";
 
 test("accepts a legal sequence that reaches the target", () => {
     assert.equal(
@@ -59,4 +63,16 @@ test("applies the proportional hint penalty, including zero after all hints", ()
     assert.equal(calculateSoloPoints(1, 3), 6);
     assert.equal(calculateSoloPoints(2, 3), 3);
     assert.equal(calculateSoloPoints(3, 3), 0);
+});
+
+test("hashes valid device credentials and rejects a different credential", () => {
+    const credential = "a1".repeat(32);
+    const hash = hashDeviceCredential(credential);
+
+    assert.equal(hash.length, 64);
+    assert.equal(matchesDeviceCredential(credential, hash), true);
+    assert.equal(matchesDeviceCredential("b2".repeat(32), hash), false);
+    assert.throws(() => hashDeviceCredential("short"), {
+        message: "invalid_device_credential",
+    });
 });

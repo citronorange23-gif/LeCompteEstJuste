@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "../lib/socket";
-import { getOrCreatePlayerId } from "../lib/player";
+import { ensurePlayerSocketRegistered } from "../lib/player";
 import { getSavedPseudo, savePseudo } from "../lib/pseudo";
 import NetInfo from "@react-native-community/netinfo";
 import {
@@ -11,6 +11,7 @@ import {
 export type MultiplayerPhase =
     | "initializing"
     | "pseudo"
+    | "identityError"
     | "connecting"
     | "menu"
     | "queue"
@@ -44,9 +45,6 @@ export const useMultiplayerMatch = () => {
 
     const matchRef =
         useRef<MatchFoundPayload | null>(null);
-
-    const playerIdRef =
-        useRef<string | null>(null);
 
     const pseudoRef =
         useRef<string | null>(null);
@@ -121,6 +119,9 @@ export const useMultiplayerMatch = () => {
             if (code === "pseudo_taken" || code === "invalid_pseudo") {
                 setPseudoError(message);
                 setPhase("pseudo");
+            } else if (code.startsWith("device_credential_")) {
+                setPseudoError(message);
+                setPhase("identityError");
             } else if (code === "not_registered") {
                 setPhase("pseudo");
             }
@@ -182,28 +183,27 @@ if (!savedPseudo) {
     return;
 }
 
-const id = await getOrCreatePlayerId();
-
-playerIdRef.current = id;
 pseudoRef.current = savedPseudo;
 
 setPhase("connecting");
-
-if (!socket.connected) {
-    socket.connect();
-}
-
-socket.emit("player:register", {
-    id,
-    pseudo: savedPseudo,
-});
+await ensurePlayerSocketRegistered();
             } catch (error) {
                 console.error(
                     "Erreur connexion automatique:",
                     error
                 );
 
-                setPhase("pseudo");
+                if (
+                    error instanceof Error &&
+                    "code" in error &&
+                    typeof error.code === "string" &&
+                    error.code.startsWith("device_credential_")
+                ) {
+                    setPseudoError(error.message);
+                    setPhase("identityError");
+                } else {
+                    setPhase("pseudo");
+                }
             }
         };
 
@@ -242,12 +242,6 @@ socket.emit("player:register", {
                 return;
             }
 
-            const id =
-                await getOrCreatePlayerId();
-
-            const socket = socketRef.current;
-
-            playerIdRef.current = id;
             pseudoRef.current = cleanPseudo;
 
             // 💾 On garde le pseudo pour toujours
@@ -256,19 +250,22 @@ socket.emit("player:register", {
 
             setPseudoError(null);
 
-            if (!socket.connected) {
-                socket.connect();
-            }
-
             setPhase("connecting");
-
-            socket.emit(
-                "player:register",
-                {
-                    id,
-                    pseudo: cleanPseudo,
-                }
-            );
+            try {
+                await ensurePlayerSocketRegistered();
+            } catch (error) {
+                setPseudoError(
+                    error instanceof Error ? error.message : "Inscription impossible."
+                );
+                setPhase(
+                    error instanceof Error &&
+                        "code" in error &&
+                        typeof error.code === "string" &&
+                        error.code.startsWith("device_credential_")
+                        ? "identityError"
+                        : "pseudo"
+                );
+            }
         },
         []
     );

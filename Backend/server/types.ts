@@ -35,6 +35,7 @@ export type MatchState = {
 export type MatchResultPayload = {
     matchId: string;
     winnerId: string | null;
+    solution: string[];
     reason:
         | "both_submitted"
         | "time_up"
@@ -71,6 +72,7 @@ export interface ClientToServerEvents {
     "player:register": (payload: {
         id: string;
         pseudo: string;
+        deviceCredential: string;
     }) => void;
 
     "queue:join": () => void;
@@ -87,7 +89,7 @@ export interface ClientToServerEvents {
     "leaderboard:get": () => void;
 
     "solo:challenge:start": () => void;
-    "solo:hint": (payload: { challengeId: string }) => void;
+    "solo:hint": (payload: { challengeId: string; hintIndex: number }) => void;
     "solo:submit": (payload: {
         challengeId: string;
         operations: SoloOperation[];
@@ -121,7 +123,6 @@ export interface ServerToClientEvents {
         };
         numbers: number[];
         target: number;
-        solution: string[];
         timeLimitMs: number;
         startAt: number;
     }) => void;
@@ -147,7 +148,7 @@ export interface ServerToClientEvents {
         challengeId: string;
         numbers: number[];
         target: number;
-        solution: string[];
+        totalHints: number;
         expiresAt: number;
     }) => void;
     "solo:hint-revealed": (payload: {

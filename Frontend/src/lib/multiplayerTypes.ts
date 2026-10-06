@@ -3,7 +3,6 @@ export type MatchFoundPayload = {
     opponent: { id: string; pseudo: string };
     numbers: number[];
     target: number;
-    solution: string[];
     timeLimitMs: number;
     startAt: number;
 };
@@ -11,6 +10,7 @@ export type MatchFoundPayload = {
 export type MatchResultPayload = {
     matchId: string;
     winnerId: string | null;
+    solution: string[];
     reason:
         | "both_submitted"
         | "time_up"

@@ -71,7 +71,6 @@ export class GameSessionManager {
                 },
                 numbers: match.numbers,
                 target: match.target,
-                solution: match.solution,
                 timeLimitMs: match.timeLimitMs,
                 startAt: match.startAt,
             });
@@ -238,7 +237,6 @@ export class GameSessionManager {
                           },
                     numbers: match.numbers,
                     target: match.target,
-                    solution: match.solution,
                     timeLimitMs: match.timeLimitMs,
                     startAt: match.startAt,
                 });
@@ -417,6 +415,7 @@ export class GameSessionManager {
                 .emit("match:result", {
                     matchId,
                     winnerId,
+                    solution: match.solution,
                     reason,
                     players,
                 });

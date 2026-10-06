@@ -33,11 +33,19 @@ export const setupSocketServer = (
                 ServerToClientEvents
             >
         ) => {
-            socket.on("player:register", async ({ id, pseudo }) => {
+            socket.on("player:register", async ({ id, pseudo, deviceCredential }) => {
                 if (isRateLimited(`register:${socket.id}`, 5, 10_000)) {
                     socket.emit("player:error", {
                         code: "rate_limited",
                         message: "Trop de tentatives, réessaie dans quelques secondes.",
+                    });
+                    return;
+                }
+
+                if (!/^[a-f0-9]{64}$/i.test(deviceCredential)) {
+                    socket.emit("player:error", {
+                        code: "device_credential_invalid",
+                        message: "Identifiant sécurisé invalide.",
                     });
                     return;
                 }
@@ -53,7 +61,11 @@ export const setupSocketServer = (
                 }
 
                 try {
-                    const player = await registerOrGetPlayer(id, pseudo.trim());
+                    const player = await registerOrGetPlayer(
+                        id,
+                        pseudo.trim(),
+                        deviceCredential
+                    );
                     const existingMatch =
                         sessions.getMatchForPlayer(
                             player.id
@@ -103,22 +115,27 @@ export const setupSocketServer = (
                         }
                     );
                 } catch (err) {
-                    const code =
-                        err instanceof Error &&
-                        err.message ===
-                            "pseudo_taken"
-                            ? "pseudo_taken"
-                            : "unknown";
+                    const knownCodes = [
+                        "pseudo_taken",
+                        "device_credential_invalid",
+                        "device_credential_in_use",
+                    ];
+                    const code = err instanceof Error && knownCodes.includes(err.message)
+                        ? err.message
+                        : "unknown";
 
                     socket.emit(
                         "player:error",
                         {
                             code,
                             message:
-                                code ===
-                                "pseudo_taken"
+                                code === "pseudo_taken"
                                     ? "Ce pseudo est déjà pris."
-                                    : "Erreur d'inscription.",
+                                    : code === "device_credential_invalid"
+                                        ? "Ce profil est déjà lié à un autre appareil."
+                                        : code === "device_credential_in_use"
+                                            ? "Cet appareil utilise déjà un autre profil."
+                                            : "Erreur d'inscription.",
                         }
                     );
                 }
@@ -254,7 +271,7 @@ export const setupSocketServer = (
                 }
             });
 
-            socket.on("solo:hint", async ({ challengeId }) => {
+            socket.on("solo:hint", async ({ challengeId, hintIndex }) => {
                 const player = socketToPlayer.get(socket.id);
                 if (!player) {
                     socket.emit("solo:error", {
@@ -277,15 +294,16 @@ export const setupSocketServer = (
                 }
 
                 try {
-                    const hint = await revealSoloHint(challengeId, player.id);
+                    const hint = await revealSoloHint(challengeId, player.id, hintIndex);
                     socket.emit("solo:hint-revealed", { challengeId, ...hint });
                 } catch (err) {
                     console.error("Erreur révélation indice solo:", err);
                     const code = err instanceof Error ? err.message : "hint_failed";
                     const retryable = ![
                         "challenge_unavailable",
-                        "no_hints_remaining",
-                        "hint_already_revealed",
+                        "invalid_hint_index",
+                        "hint_out_of_order",
+                        "hint_unavailable",
                     ].includes(code);
                     socket.emit("solo:error", {
                         challengeId,

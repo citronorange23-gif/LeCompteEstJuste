@@ -91,14 +91,15 @@ export const createSoloChallenge = async (playerId: string) => {
         challengeId,
         numbers: game.numbers,
         target: game.target,
-        solution: game.solution,
+        totalHints: game.solution.length,
         expiresAt: expiresAt.getTime(),
     };
 };
 
 export const revealSoloHint = async (
     challengeId: string,
-    playerId: string
+    playerId: string,
+    requestedHintIndex: number
 ) => {
     const challenge = await prisma.soloChallenge.findFirst({
         where: {
@@ -111,28 +112,55 @@ export const revealSoloHint = async (
     });
 
     if (!challenge) throw new Error("challenge_unavailable");
-    if (challenge.hintsUsed >= challenge.solution.length) {
-        throw new Error("no_hints_remaining");
+    if (
+        !Number.isInteger(requestedHintIndex) ||
+        requestedHintIndex < 0 ||
+        requestedHintIndex >= challenge.solution.length
+    ) {
+        throw new Error("invalid_hint_index");
     }
 
-    const hintIndex = challenge.hintsUsed;
+    if (requestedHintIndex < challenge.hintsUsed) {
+        return {
+            hintIndex: requestedHintIndex,
+            hintsUsed: challenge.hintsUsed,
+            hint: challenge.solution[requestedHintIndex],
+        };
+    }
+    if (requestedHintIndex > challenge.hintsUsed) {
+        throw new Error("hint_out_of_order");
+    }
+
     const updated = await prisma.soloChallenge.updateMany({
         where: {
             id: challengeId,
             playerId,
-            hintsUsed: hintIndex,
+            hintsUsed: requestedHintIndex,
             completedAt: null,
             expiresAt: { gt: new Date() },
         },
         data: { hintsUsed: { increment: 1 } },
     });
 
-    if (updated.count !== 1) throw new Error("hint_already_revealed");
+    if (updated.count !== 1) {
+        const current = await prisma.soloChallenge.findFirst({
+            where: { id: challengeId, playerId, expiresAt: { gt: new Date() } },
+            select: { hintsUsed: true, solution: true },
+        });
+        if (current && current.hintsUsed > requestedHintIndex) {
+            return {
+                hintIndex: requestedHintIndex,
+                hintsUsed: current.hintsUsed,
+                hint: current.solution[requestedHintIndex],
+            };
+        }
+        throw new Error("hint_unavailable");
+    }
 
     return {
-        hintIndex,
-        hintsUsed: hintIndex + 1,
-        hint: challenge.solution[hintIndex],
+        hintIndex: requestedHintIndex,
+        hintsUsed: requestedHintIndex + 1,
+        hint: challenge.solution[requestedHintIndex],
     };
 };
 
