@@ -33,7 +33,7 @@ type HistoryEntry = {
     numbers: NumEntry[];
     steps: string[];
     nextId: number;
-    operations: SoloOperation[];h
+    operations: SoloOperation[];
 };
 
 console.log("[SOLO] imports", {

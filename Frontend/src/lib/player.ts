@@ -246,6 +246,7 @@ const sendPendingSoloScore = async (
     };
 
     const onError = (payload: { scoreId?: string; retryable: boolean }) => {
+        console.log("[SOLO] erreur serveur", payload);
         if (payload.scoreId === pending.scoreId) {
             finish(payload.retryable ? "retry" : "rejected");
         }
@@ -253,6 +254,7 @@ const sendPendingSoloScore = async (
 
     socket.on("solo:score-recorded", onRecorded);
     socket.on("solo:error", onError);
+    console.log("[SOLO] envoi", pending, "connecté:", socket.connected);
     socket.emit("solo:submit", pending);
 });
 
@@ -286,7 +288,8 @@ export const syncPendingSoloScores = async (
         }
 
         return requestedOutcome ?? (requestedScoreId ? "queued" : undefined);
-    } catch {
+    } catch (error) {
+        console.log("[SOLO] sync échouée", error);
         // Keep queued results locally until a later connection succeeds.
         return requestedScoreId ? "queued" : undefined;
     } finally {

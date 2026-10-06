@@ -6,11 +6,7 @@ import { getTopPlayers } from "./leaderboard";
 import { validatePseudo } from "./validation";
 import { isRateLimited } from "./rateLimiter";
 import { createGameInvite, getAndValidateInvite } from "./invite"; // <-- Importe tes fonctions d'invitation
-import {
-    createSoloChallenge,
-    revealSoloHint,
-    submitSoloChallenge,
-} from "./soloChallenge";
+import { recordSoloScore } from "./soloChallenge";
 import {
     ClientToServerEvents,
     ServerToClientEvents,
@@ -314,11 +310,11 @@ export const setupSocketServer = (
                 }
             });
 
-            socket.on("solo:submit", async ({ challengeId, operations, hintsUsed }) => {
+            socket.on("solo:submit", async ({ scoreId, points }) => {
                 const player = socketToPlayer.get(socket.id);
                 if (!player) {
                     socket.emit("solo:error", {
-                        challengeId,
+                        scoreId,
                         code: "not_registered",
                         message: "Enregistre-toi avant de sauvegarder ton score.",
                         retryable: true,
@@ -328,7 +324,7 @@ export const setupSocketServer = (
 
                 if (isRateLimited(`solo-submit:${player.id}`, 20, 60_000)) {
                     socket.emit("solo:error", {
-                        challengeId,
+                        scoreId,
                         code: "rate_limited",
                         message: "Trop de scores envoyés, réessaie plus tard.",
                         retryable: true,
@@ -337,28 +333,16 @@ export const setupSocketServer = (
                 }
 
                 try {
-                    const points = await submitSoloChallenge(
-                        challengeId,
-                        player.id,
-                        operations,
-                        hintsUsed
-                    );
-                    socket.emit("solo:score-recorded", { challengeId, points });
+                    const saved = await recordSoloScore(player.id, scoreId, points);
+                    socket.emit("solo:score-recorded", { scoreId, points: saved });
                 } catch (err) {
-                    console.error("Erreur validation score solo:", err);
+                    console.error("Erreur enregistrement score solo:", err);
                     const code = err instanceof Error ? err.message : "submit_failed";
-                    const retryable = ![
-                        "challenge_not_found",
-                        "challenge_expired",
-                        "invalid_hint_count",
-                        "invalid_solution",
-                        "challenge_unavailable",
-                    ].includes(code);
                     socket.emit("solo:error", {
-                        challengeId,
+                        scoreId,
                         code,
-                        message: "La solution ou le défi n’est pas valide.",
-                        retryable,
+                        message: "Impossible d'enregistrer ce score.",
+                        retryable: code !== "invalid_score",
                     });
                 }
             });
