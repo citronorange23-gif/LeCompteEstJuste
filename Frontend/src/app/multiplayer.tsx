@@ -34,6 +34,7 @@ export default function Multiplayer() {
     const {
         phase,
         pseudoError,
+        retryConnection,
         match,
         result,
         opponentAnswered,
@@ -355,6 +356,11 @@ export default function Multiplayer() {
                         size="large"
                         color="#6366F1"
                     />
+                    {phase === "connecting" && (
+                        <Text style={mpStyles.label}>
+                            Connexion au serveur… son réveil peut prendre un moment.
+                        </Text>
+                    )}
                 </View>
             </SafeAreaView>
         );
@@ -372,6 +378,35 @@ export default function Multiplayer() {
                             quitter();
                             router.back();
                         }}
+                        style={mpStyles.secondaryButton}
+                    >
+                        <Text style={mpStyles.secondaryButtonText}>Retour</Text>
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (phase === "connectionError") {
+        return (
+            <SafeAreaView style={styles.container} edges={["top"]}>
+                <View style={mpStyles.centered}>
+                    <Ionicons
+                        name="cloud-offline-outline"
+                        size={48}
+                        color="#64748B"
+                    />
+                    <Text style={mpStyles.label}>
+                        {pseudoError ?? "Connexion au serveur impossible."}
+                    </Text>
+                    <Pressable
+                        onPress={() => void retryConnection()}
+                        style={mpStyles.primaryButton}
+                    >
+                        <Text style={mpStyles.primaryButtonText}>Réessayer</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => router.back()}
                         style={mpStyles.secondaryButton}
                     >
                         <Text style={mpStyles.secondaryButtonText}>Retour</Text>

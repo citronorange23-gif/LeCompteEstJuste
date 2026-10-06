@@ -59,10 +59,13 @@ test("rejects a shortcut that cannot satisfy the generated target difficulty", (
 });
 
 test("applies the proportional hint penalty, including zero after all hints", () => {
-    assert.equal(calculateSoloPoints(0, 3), 10);
-    assert.equal(calculateSoloPoints(1, 3), 6);
-    assert.equal(calculateSoloPoints(2, 3), 3);
-    assert.equal(calculateSoloPoints(3, 3), 0);
+    const scores = Array.from({ length: 5 }, (_, hintsUsed) =>
+        calculateSoloPoints(hintsUsed, 4)
+    );
+
+    assert.deepEqual(scores, [10, 7, 5, 2, 0]);
+    assert.equal(scores.every(Number.isInteger), true);
+    assert.equal(scores.every((score, index) => index === 0 || score <= scores[index - 1]), true);
 });
 
 test("hashes valid device credentials and rejects a different credential", () => {

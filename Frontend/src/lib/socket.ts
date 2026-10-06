@@ -9,6 +9,10 @@ export const getSocket = (): Socket => {
         socket = io(SERVER_URL, {
             autoConnect: false,
             transports: ["websocket"],
+            timeout: 15_000,
+            reconnection: true,
+            reconnectionDelay: 1_000,
+            reconnectionDelayMax: 5_000,
         });
     }
     return socket;

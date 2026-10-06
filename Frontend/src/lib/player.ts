@@ -8,6 +8,7 @@ import { getSocket } from "./socket";
 const PLAYER_ID_KEY = "lcb_player_id";
 const DEVICE_CREDENTIAL_KEY = "lcb_device_credential";
 const PENDING_SOLO_SCORES_KEY = "lcb_pending_solo_scores";
+const SOCKET_CONNECT_TIMEOUT_MS = 60_000;
 let registeredSocketId: string | null = null;
 let disconnectListenerAttached = false;
 let pendingSyncInProgress = false;
@@ -131,10 +132,15 @@ const connectAndRegisterSocket = async () => {
 
     if (!socket.connected) {
         await new Promise<void>((resolve, reject) => {
+            let lastConnectionError: string | null = null;
             const timeout = setTimeout(() => {
                 cleanup();
-                reject(new Error("Connexion au serveur expirée."));
-            }, 10_000);
+                reject(new Error(
+                    lastConnectionError
+                        ? `Connexion au serveur impossible: ${lastConnectionError}`
+                        : "Connexion au serveur expirée après plusieurs tentatives."
+                ));
+            }, SOCKET_CONNECT_TIMEOUT_MS);
 
             const cleanup = () => {
                 clearTimeout(timeout);
@@ -147,13 +153,12 @@ const connectAndRegisterSocket = async () => {
                 resolve();
             };
 
-            const onConnectError = () => {
-                cleanup();
-                reject(new Error("Connexion au serveur impossible."));
+            const onConnectError = (error: Error) => {
+                lastConnectionError = error.message;
             };
 
-            socket.once("connect", onConnect);
-            socket.once("connect_error", onConnectError);
+            socket.on("connect", onConnect);
+            socket.on("connect_error", onConnectError);
             socket.connect();
         });
     }

@@ -1,5 +1,9 @@
 import { randomUUID } from "crypto";
-import { computeResult, genererPartie } from "@lcb/shared/algorithm";
+import {
+    applyHintPenalty,
+    computeResult,
+    genererPartie,
+} from "@lcb/shared/algorithm";
 import { prisma } from "./db";
 
 const CHALLENGE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -61,9 +65,7 @@ export const calculateSoloPoints = (
     hintsUsed: number,
     totalHints: number
 ): number => {
-    if (totalHints <= 0) return 10;
-
-    return Math.floor(10 * Math.max(0, totalHints - hintsUsed) / totalHints);
+    return applyHintPenalty(10, hintsUsed, totalHints);
 };
 
 export const createSoloChallenge = async (playerId: string) => {

@@ -12,6 +12,7 @@ export type MultiplayerPhase =
     | "initializing"
     | "pseudo"
     | "identityError"
+    | "connectionError"
     | "connecting"
     | "menu"
     | "queue"
@@ -202,7 +203,12 @@ await ensurePlayerSocketRegistered();
                     setPseudoError(error.message);
                     setPhase("identityError");
                 } else {
-                    setPhase("pseudo");
+                    setPseudoError(
+                        error instanceof Error
+                            ? error.message
+                            : "Connexion au serveur impossible."
+                    );
+                    setPhase("connectionError");
                 }
             }
         };
@@ -231,6 +237,30 @@ await ensurePlayerSocketRegistered();
         };
     }, []);
 
+    const retryConnection = useCallback(async () => {
+        setPseudoError(null);
+        setPhase("connecting");
+
+        try {
+            await ensurePlayerSocketRegistered();
+            setIsConnected(true);
+            setPhase("menu");
+        } catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : "Connexion au serveur impossible.";
+            setPseudoError(message);
+            setPhase(
+                error instanceof Error &&
+                    "code" in error &&
+                    typeof error.code === "string" &&
+                    error.code.startsWith("device_credential_")
+                    ? "identityError"
+                    : "connectionError"
+            );
+        }
+    }, []);
+
     const register = useCallback(
         async (pseudo: string) => {
             const cleanPseudo = pseudo.trim();
@@ -257,13 +287,15 @@ await ensurePlayerSocketRegistered();
                 setPseudoError(
                     error instanceof Error ? error.message : "Inscription impossible."
                 );
+                const code = error instanceof Error && "code" in error && typeof error.code === "string"
+                    ? error.code
+                    : "";
                 setPhase(
-                    error instanceof Error &&
-                        "code" in error &&
-                        typeof error.code === "string" &&
-                        error.code.startsWith("device_credential_")
+                    code.startsWith("device_credential_")
                         ? "identityError"
-                        : "pseudo"
+                        : code === "pseudo_taken" || code === "invalid_pseudo"
+                            ? "pseudo"
+                            : "connectionError"
                 );
             }
         },
@@ -361,6 +393,7 @@ await ensurePlayerSocketRegistered();
         submitAnswer,
         rejouer,
         quitter,
+        retryConnection,
         annulerRecherche,
         isOffline
     };

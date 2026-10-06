@@ -241,3 +241,14 @@ export const computeScore = (diff: number): number => {
     if (diff <= 10) return 3;
     return 0;
 };
+
+export const applyHintPenalty = (
+    baseScore: number,
+    hintsUsed: number,
+    totalHints: number
+): number => {
+    if (totalHints <= 0) return Math.floor(baseScore);
+
+    const remainingHints = Math.max(0, totalHints - hintsUsed);
+    return Math.floor(baseScore * remainingHints / totalHints);
+};

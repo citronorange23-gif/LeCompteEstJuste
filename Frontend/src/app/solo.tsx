@@ -16,8 +16,9 @@ import {
     computeResult,
     computeScore,
     computeReachableMap,
+    applyHintPenalty,
     type Game,
-} from "../lib/algorithm";
+} from "@lcb/shared/algorithm";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationBar } from "expo-navigation-bar";
 import {
@@ -37,18 +38,6 @@ type HistoryEntry = {
     steps: string[];
     nextId: number;
     operations: SoloOperation[];
-};
-
-const applyHintPenalty = (
-    baseScore: number,
-    hintsUsed: number,
-    totalHints: number
-) => {
-    if (totalHints <= 0) return baseScore;
-
-    return Math.floor(
-        baseScore * Math.max(0, totalHints - hintsUsed) / totalHints
-    );
 };
 
 export default function Solo() {
@@ -563,7 +552,7 @@ export default function Solo() {
 
                 {!validated && (
                     <Text style={[styles.subtitle, { color: potentialScoreColor }]}>
-                        Points encore possibles : {currentPotentialScore}
+                        Points : {currentPotentialScore}
                     </Text>
                 )}
 
